@@ -37,7 +37,7 @@ class MonevoDataStore(private val context: Context) {
     }
 
     val unlockedMilestoneCount: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[UNLOCKED_MILESTONES_KEY] ?: 2
+        preferences[UNLOCKED_MILESTONES_KEY] ?: 1
     }
 
     val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->

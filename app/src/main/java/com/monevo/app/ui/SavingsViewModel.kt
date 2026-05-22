@@ -128,13 +128,14 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             groups.add(MilestoneGroup(name = "Final Milestone", tiles = currentGroupTiles))
         }
 
-        // SINGLE SOURCE OF TRUTH LOCKING LOGIC
-        // A milestone is locked if its index is beyond (completed milestones + user-chosen buffer)
-        val completedMilestonesCount = totalSaved / milestoneStep
-        groups.mapIndexed { index, group ->
-            group.copy(isLocked = index > completedMilestonesCount + unlockedMilestoneOffset)
-        }
+    // SINGLE SOURCE OF TRUTH LOCKING LOGIC
+    // Base progression: (totalSaved / 5000) + 1
+    // At ₹0: (0 / 5000) + 1 = 1. index > 1 is locked (0, 1 unlocked)
+    val unlockedMilestones = (totalSaved / milestoneStep) + unlockedMilestoneOffset
+    groups.mapIndexed { index, group ->
+        group.copy(isLocked = index > unlockedMilestones)
     }
+}
 
     init {
         viewModelScope.launch {
