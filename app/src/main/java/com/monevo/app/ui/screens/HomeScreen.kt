@@ -39,13 +39,17 @@ import com.monevo.app.ui.theme.*
 
 @Composable
 fun HomeScreen(viewModel: SavingsViewModel) {
-    val groupedTiles by remember { derivedStateOf { viewModel.groupedTiles } }
-    var expandedSectionIndex by remember { mutableStateOf(0) }
+    // Keep groupedTiles read isolated
+    val groupedTiles = viewModel.groupedTiles
+    var expandedSectionIndex by remember { mutableIntStateOf(0) }
 
-    if (viewModel.showUnlockDialog) {
-        ProgressionChoiceDialog(
-            onChoiceSelected = { count -> viewModel.unlockMilestones(count) }
-        )
+    // Isolate Dialog visibility check
+    Box {
+        if (viewModel.showUnlockDialog) {
+            ProgressionChoiceDialog(
+                onChoiceSelected = { count -> viewModel.unlockMilestones(count) }
+            )
+        }
     }
 
     Column(
@@ -66,12 +70,13 @@ fun HomeScreen(viewModel: SavingsViewModel) {
         
         Spacer(modifier = Modifier.height(20.dp))
         
+        // Pass providers to avoid parent recomposition
         TotalSavedCard(
-            total = viewModel.totalSaved,
-            goal = viewModel.goalAmount,
-            progress = viewModel.progress,
-            completedCount = viewModel.tiles.count { it.isCompleted },
-            totalCount = viewModel.tiles.size
+            totalProvider = { viewModel.totalSaved },
+            progressProvider = { viewModel.progress },
+            completedCountProvider = { viewModel.tiles.count { it.isCompleted } },
+            totalCountProvider = { viewModel.tiles.size },
+            goalProvider = { viewModel.goalAmount }
         )
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -84,7 +89,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
             groupedTiles.forEachIndexed { index, group ->
                 val isExpanded = expandedSectionIndex == index && !group.isLocked
                 
-                item(key = "header_$index") {
+                item(key = "header_${group.name}") {
                     MilestoneAccordionHeader(
                         name = group.name,
                         isExpanded = isExpanded,
@@ -97,7 +102,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                     )
                 }
                 
-                item(key = "content_$index") {
+                item(key = "content_${group.name}") {
                     AnimatedVisibility(
                         visible = isExpanded,
                         enter = fadeIn() + expandVertically(),
@@ -114,6 +119,171 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun TileGrid(tiles: List<SavingsTile>, viewModel: SavingsViewModel) {
+    // Memoize the chunking operation
+    val rows = remember(tiles) { tiles.chunked(5) }
+    
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        rows.forEachIndexed { rowIndex, rowTiles ->
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                rowTiles.forEach { tile ->
+                    Box(modifier = Modifier.weight(1f)) {
+                        SavingsTileItem(tile) {
+                            viewModel.toggleTile(tile.id)
+                        }
+                    }
+                }
+                if (rowTiles.size < 5) {
+                    repeat(5 - rowTiles.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun TotalSavedCard(
+    totalProvider: () -> Int,
+    progressProvider: () -> Float,
+    completedCountProvider: () -> Int,
+    totalCountProvider: () -> Int,
+    goalProvider: () -> Int
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = PrimaryCard),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(20.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        text = "Total Saved",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = SecondaryText
+                    )
+                    Text(
+                        text = "₹${totalProvider()}",
+                        style = MaterialTheme.typography.headlineLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryText
+                    )
+                }
+                
+                Surface(
+                    color = ElevatedCard,
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        text = "${completedCountProvider()}/${totalCountProvider()}",
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = SoftGold
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(16.dp))
+            
+            val progressValue = progressProvider()
+            LinearProgressIndicator(
+                progress = { progressValue.coerceIn(0f, 1f) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(6.dp)
+                    .clip(RoundedCornerShape(3.dp)),
+                color = AccentGold,
+                trackColor = ElevatedCard,
+            )
+            
+            Spacer(modifier = Modifier.height(10.dp))
+            
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "${(progressValue * 100).toInt()}% of goal",
+                    style = MaterialTheme.typography.labelSmall,
+                    fontWeight = FontWeight.SemiBold,
+                    color = AccentGold
+                )
+                Text(
+                    text = "Goal: ₹%,d".format(goalProvider()),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SecondaryText
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SavingsTileItem(tile: SavingsTile, onClick: () -> Unit) {
+    val interactionSource = remember { MutableInteractionSource() }
+    val isPressed by interactionSource.collectIsPressedAsState()
+    
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.94f else 1f,
+        label = "scale"
+    )
+
+    val backgroundColor by animateColorAsState(
+        targetValue = if (tile.isCompleted) SuccessGreen else ElevatedCard,
+        animationSpec = spring(), label = "color"
+    )
+    
+    val contentColor by animateColorAsState(
+        targetValue = if (tile.isCompleted) Background else PrimaryText,
+        animationSpec = spring(), label = "contentColor"
+    )
+
+    Box(
+        modifier = Modifier
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .aspectRatio(1.1f)
+            .shadow(
+                elevation = if (tile.isCompleted) 8.dp else 0.dp,
+                shape = RoundedCornerShape(10.dp),
+                spotColor = SuccessGreen.copy(alpha = 0.3f)
+            )
+            .clip(RoundedCornerShape(10.dp))
+            .background(backgroundColor)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = null
+            ) { onClick() },
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            text = "₹${tile.amount}",
+            style = TextStyle(
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold,
+                color = contentColor
+            )
+        )
     }
 }
 
@@ -207,29 +377,6 @@ fun ChoiceButton(
 }
 
 @Composable
-fun TileGrid(tiles: List<SavingsTile>, viewModel: SavingsViewModel) {
-    val rows = tiles.chunked(5)
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        rows.forEach { rowTiles ->
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                rowTiles.forEach { tile ->
-                    Box(modifier = Modifier.weight(1f)) {
-                        SavingsTileItem(tile) {
-                            viewModel.toggleTile(tile.id)
-                        }
-                    }
-                }
-                if (rowTiles.size < 5) {
-                    repeat(5 - rowTiles.size) {
-                        Spacer(modifier = Modifier.weight(1f))
-                    }
-                }
-            }
-        }
-    }
-}
-
-@Composable
 fun MilestoneAccordionHeader(
     name: String,
     isExpanded: Boolean,
@@ -283,135 +430,5 @@ fun MilestoneAccordionHeader(
                 )
             }
         }
-    }
-}
-
-@Composable
-fun TotalSavedCard(total: Int, goal: Int, progress: Float, completedCount: Int, totalCount: Int) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = PrimaryCard),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(
-            modifier = Modifier.padding(20.dp)
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column {
-                    Text(
-                        text = "Total Saved",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = SecondaryText
-                    )
-                    Text(
-                        text = "₹$total",
-                        style = MaterialTheme.typography.headlineLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = PrimaryText
-                    )
-                }
-                
-                Surface(
-                    color = ElevatedCard,
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Text(
-                        text = "$completedCount/$totalCount",
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-                        style = MaterialTheme.typography.labelSmall,
-                        fontWeight = FontWeight.Bold,
-                        color = SoftGold
-                    )
-                }
-            }
-            
-            Spacer(modifier = Modifier.height(16.dp))
-            
-            LinearProgressIndicator(
-                progress = { progress.coerceIn(0f, 1f) },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = AccentGold,
-                trackColor = ElevatedCard,
-            )
-            
-            Spacer(modifier = Modifier.height(10.dp))
-            
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "${(progress * 100).toInt()}% of goal",
-                    style = MaterialTheme.typography.labelSmall,
-                    fontWeight = FontWeight.SemiBold,
-                    color = AccentGold
-                )
-                Text(
-                    text = "Goal: ₹%,d".format(goal),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = SecondaryText
-                )
-            }
-        }
-    }
-}
-
-@Composable
-fun SavingsTileItem(tile: SavingsTile, onClick: () -> Unit) {
-    val interactionSource = remember { MutableInteractionSource() }
-    val isPressed by interactionSource.collectIsPressedAsState()
-    
-    val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.94f else 1f,
-        label = "scale"
-    )
-
-    val backgroundColor by animateColorAsState(
-        targetValue = if (tile.isCompleted) SuccessGreen else ElevatedCard,
-        animationSpec = spring(), label = "color"
-    )
-    
-    val contentColor by animateColorAsState(
-        targetValue = if (tile.isCompleted) Background else PrimaryText,
-        animationSpec = spring(), label = "contentColor"
-    )
-
-    Box(
-        modifier = Modifier
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
-            .aspectRatio(1.1f)
-            .shadow(
-                elevation = if (tile.isCompleted) 8.dp else 0.dp,
-                shape = RoundedCornerShape(10.dp),
-                spotColor = SuccessGreen.copy(alpha = 0.3f)
-            )
-            .clip(RoundedCornerShape(10.dp))
-            .background(backgroundColor)
-            .clickable(
-                interactionSource = interactionSource,
-                indication = null
-            ) { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = "₹${tile.amount}",
-            style = TextStyle(
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = contentColor
-            )
-        )
     }
 }
