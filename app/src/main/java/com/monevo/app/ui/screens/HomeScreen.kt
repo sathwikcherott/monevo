@@ -14,7 +14,6 @@ import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
@@ -30,8 +29,10 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
 import com.monevo.app.model.SavingsTile
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.theme.*
@@ -40,6 +41,12 @@ import com.monevo.app.ui.theme.*
 fun HomeScreen(viewModel: SavingsViewModel) {
     val groupedTiles by remember { derivedStateOf { viewModel.groupedTiles } }
     var expandedSectionIndex by remember { mutableStateOf(0) }
+
+    if (viewModel.showUnlockDialog) {
+        ProgressionChoiceDialog(
+            onChoiceSelected = { count -> viewModel.unlockMilestones(count) }
+        )
+    }
 
     Column(
         modifier = Modifier
@@ -61,6 +68,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
         
         TotalSavedCard(
             total = viewModel.totalSaved,
+            goal = viewModel.goalAmount,
             progress = viewModel.progress,
             completedCount = viewModel.tiles.count { it.isCompleted },
             totalCount = viewModel.tiles.size
@@ -105,6 +113,95 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun ProgressionChoiceDialog(onChoiceSelected: (Int) -> Unit) {
+    Dialog(onDismissRequest = { }) {
+        Surface(
+            shape = RoundedCornerShape(32.dp),
+            color = PrimaryCard,
+            tonalElevation = 8.dp
+        ) {
+            Column(
+                modifier = Modifier
+                    .padding(24.dp)
+                    .fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Spacer(modifier = Modifier.height(8.dp))
+                
+                Text(
+                    text = "Milestone Complete",
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = PrimaryText,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "You’ve completed this milestone.\nHow would you like to continue?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = SecondaryText,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 20.sp
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                ChoiceButton(
+                    title = "Focus Mode",
+                    subtitle = "Unlock 1 next milestone",
+                    onClick = { onChoiceSelected(1) }
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                ChoiceButton(
+                    title = "Expand Progress",
+                    subtitle = "Unlock 2 next milestones",
+                    isPrimary = true,
+                    onClick = { onChoiceSelected(2) }
+                )
+                
+                Spacer(modifier = Modifier.height(8.dp))
+            }
+        }
+    }
+}
+
+@Composable
+fun ChoiceButton(
+    title: String,
+    subtitle: String,
+    isPrimary: Boolean = false,
+    onClick: () -> Unit
+) {
+    Surface(
+        onClick = onClick,
+        color = if (isPrimary) SoftGold else ElevatedCard,
+        shape = RoundedCornerShape(20.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Column(
+            modifier = Modifier.padding(vertical = 16.dp, horizontal = 20.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isPrimary) Background else PrimaryText
+            )
+            Text(
+                text = subtitle,
+                style = MaterialTheme.typography.labelSmall,
+                color = if (isPrimary) Background.copy(alpha = 0.7f) else SecondaryText
+            )
         }
     }
 }
@@ -190,7 +287,7 @@ fun MilestoneAccordionHeader(
 }
 
 @Composable
-fun TotalSavedCard(total: Int, progress: Float, completedCount: Int, totalCount: Int) {
+fun TotalSavedCard(total: Int, goal: Int, progress: Float, completedCount: Int, totalCount: Int) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = PrimaryCard),
@@ -259,7 +356,7 @@ fun TotalSavedCard(total: Int, progress: Float, completedCount: Int, totalCount:
                     color = AccentGold
                 )
                 Text(
-                    text = "Goal: ₹50,000",
+                    text = "Goal: ₹%,d".format(goal),
                     style = MaterialTheme.typography.labelSmall,
                     color = SecondaryText
                 )

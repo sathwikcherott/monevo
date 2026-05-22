@@ -55,7 +55,7 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
             )
             AnalyticsCard(
                 title = "Remaining",
-                value = "₹${viewModel.goalAmount - viewModel.totalSaved}",
+                value = "₹%,d".format(viewModel.goalAmount - viewModel.totalSaved),
                 modifier = Modifier.weight(1f)
             )
         }

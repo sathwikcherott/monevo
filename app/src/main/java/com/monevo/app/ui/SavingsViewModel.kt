@@ -2,18 +2,25 @@ package com.monevo.app.ui
 
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.lifecycle.ViewModel
+import com.monevo.app.config.MonevoConfig
 import com.monevo.app.model.SavingsTile
 import kotlin.random.Random
 
 class SavingsViewModel : ViewModel() {
-    val goalAmount: Int = 50000
-    private val milestoneStep = 5000
+    val goalAmount: Int = MonevoConfig.DEFAULT_SAVINGS_GOAL
+    private val milestoneStep = MonevoConfig.MILESTONE_STEP
     
     val tiles = mutableStateListOf<SavingsTile>().apply {
         addAll(generateTiles(goalAmount))
     }
+
+    var unlockedMilestoneCount by mutableIntStateOf(2)
+    var showUnlockDialog by mutableStateOf(false)
 
     val totalSaved by derivedStateOf {
         tiles.filter { it.isCompleted }.sumOf { it.amount }
@@ -55,23 +62,33 @@ class SavingsViewModel : ViewModel() {
             )
         }
 
-        // Progression Logic: 
-        // 1st and 2nd are always unlocked initially.
-        // Subsequent ones unlock when the previous one is completed.
         groups.mapIndexed { index, group ->
-            val isLocked = when {
-                index <= 1 -> false // First two are always available
-                else -> !groups[index - 1].isCompleted // Locked if previous is not completed
-            }
-            group.copy(isLocked = isLocked)
+            group.copy(isLocked = index >= unlockedMilestoneCount)
         }
     }
 
     fun toggleTile(id: Int) {
         val index = tiles.indexOfFirst { it.id == id }
         if (index != -1) {
-            tiles[index] = tiles[index].copy(isCompleted = !tiles[index].isCompleted)
+            val wasCompleted = tiles[index].isCompleted
+            tiles[index] = tiles[index].copy(isCompleted = !wasCompleted)
+            
+            // If we just completed a tile and it was the last tile in the latest unlocked group
+            if (!wasCompleted) {
+                val latestUnlockedIndex = unlockedMilestoneCount - 1
+                if (latestUnlockedIndex < groupedTiles.size) {
+                    val latestGroup = groupedTiles[latestUnlockedIndex]
+                    if (latestGroup.isCompleted) {
+                        showUnlockDialog = true
+                    }
+                }
+            }
         }
+    }
+
+    fun unlockMilestones(count: Int) {
+        unlockedMilestoneCount += count
+        showUnlockDialog = false
     }
 
     private fun generateTiles(target: Int): List<SavingsTile> {
