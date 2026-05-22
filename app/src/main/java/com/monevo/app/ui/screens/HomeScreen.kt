@@ -25,6 +25,14 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     val groupedTiles = viewModel.groupedTiles
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
 
+    // Celebration Dialog
+    viewModel.activeCelebration?.let { celebration ->
+        CelebrationDialog(
+            celebration = celebration,
+            onDismiss = { viewModel.dismissCelebration() }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()

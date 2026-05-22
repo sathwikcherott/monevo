@@ -28,6 +28,10 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     var isOnboardingCompleted by mutableStateOf(true)
 
+    private val shownCelebrationIds = mutableSetOf<String>()
+    var activeCelebration by mutableStateOf<CelebrationType?>(null)
+        private set
+
     val totalSaved by derivedStateOf {
         tiles.filter { it.isCompleted }.sumOf { it.amount }
     }
@@ -152,8 +156,10 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val savedTilesData = dataStore.completedTilesData.first()
             val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
+            val savedCelebrations = dataStore.shownCelebrationIds.first()
             
             isOnboardingCompleted = savedOnboardingStatus
+            shownCelebrationIds.addAll(savedCelebrations)
             
             savedTilesData.forEach { (id, timestamp) ->
                 val index = tiles.indexOfFirst { it.id == id }
@@ -174,8 +180,44 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                 isCompleted = nowCompleted,
                 completedAt = if (nowCompleted) System.currentTimeMillis() else null
             )
+            
+            if (nowCompleted) {
+                checkForCelebration()
+            }
             saveState()
         }
+    }
+
+    private fun checkForCelebration() {
+        val groups = groupedTiles
+        // Check standard milestones
+        groups.forEach { group ->
+            val milestoneId = "milestone_${group.rangeEnd}"
+            if (group.isCompleted && !shownCelebrationIds.contains(milestoneId)) {
+                triggerCelebration(milestoneId, group.rangeEnd)
+            }
+        }
+        
+        // Check final milestone specifically
+        if (totalSaved >= goalAmount && !shownCelebrationIds.contains("final_goal")) {
+            triggerCelebration("final_goal", goalAmount, isFinal = true)
+        }
+    }
+
+    private fun triggerCelebration(id: String, amount: Int, isFinal: Boolean = false) {
+        shownCelebrationIds.add(id)
+        viewModelScope.launch {
+            dataStore.markCelebrationShown(id)
+            activeCelebration = if (isFinal) {
+                CelebrationType.FinalGoal(amount)
+            } else {
+                CelebrationType.MilestoneReached(amount)
+            }
+        }
+    }
+
+    fun dismissCelebration() {
+        activeCelebration = null
     }
 
     fun completeOnboarding() {
@@ -249,3 +291,9 @@ data class ConsistencyData(
     val bestWeek: Int,
     val avgWeekly: Int
 )
+
+sealed class CelebrationType {
+    abstract val amount: Int
+    data class MilestoneReached(override val amount: Int) : CelebrationType()
+    data class FinalGoal(override val amount: Int) : CelebrationType()
+}
