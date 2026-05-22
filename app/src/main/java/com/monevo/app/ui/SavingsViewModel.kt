@@ -14,6 +14,7 @@ import com.monevo.app.data.MonevoDataStore
 import com.monevo.app.model.SavingsTile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
+import java.util.*
 import kotlin.random.Random
 
 class SavingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -28,7 +29,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     var unlockedMilestoneCount by mutableIntStateOf(2)
     var showUnlockDialog by mutableStateOf(false)
-    var isOnboardingCompleted by mutableStateOf(true) // Default to true to avoid flicker before load
+    var isOnboardingCompleted by mutableStateOf(true)
 
     val totalSaved by derivedStateOf {
         tiles.filter { it.isCompleted }.sumOf { it.amount }
@@ -37,6 +38,76 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     val progress by derivedStateOf {
         totalSaved.toFloat() / goalAmount
     }
+
+    // --- REAL ACTIVITY DATA LOGIC ---
+
+    val weeklyMomentum by derivedStateOf {
+        val calendar = Calendar.getInstance()
+        val currentWeek = calendar.get(Calendar.WEEK_OF_YEAR)
+        val currentYear = calendar.get(Calendar.YEAR)
+        
+        // Array for Mon-Sun (0 to 6)
+        val daySavings = FloatArray(7) { 0f }
+        
+        tiles.filter { it.isCompleted && it.completedAt != null }.forEach { tile ->
+            calendar.timeInMillis = tile.completedAt!!
+            if (calendar.get(Calendar.WEEK_OF_YEAR) == currentWeek && 
+                calendar.get(Calendar.YEAR) == currentYear) {
+                
+                // Adjust day of week (Calendar.SUNDAY is 1, Monday is 2...)
+                val day = when (calendar.get(Calendar.DAY_OF_WEEK)) {
+                    Calendar.MONDAY -> 0
+                    Calendar.TUESDAY -> 1
+                    Calendar.WEDNESDAY -> 2
+                    Calendar.THURSDAY -> 3
+                    Calendar.FRIDAY -> 4
+                    Calendar.SATURDAY -> 5
+                    Calendar.SUNDAY -> 6
+                    else -> 0
+                }
+                daySavings[day] += tile.amount.toFloat()
+            }
+        }
+        
+        // Normalize heights (max bar will be around 1.0f)
+        val maxAmount = daySavings.maxOrNull() ?: 1f
+        daySavings.map { if (maxAmount > 0) it / maxAmount else 0f }
+    }
+
+    val consistencyStats by derivedStateOf {
+        val completedTiles = tiles.filter { it.isCompleted && it.completedAt != null }
+        if (completedTiles.isEmpty()) return@derivedStateOf ConsistencyData(0, 0, 0)
+        
+        val calendar = Calendar.getInstance()
+        
+        // Map of "Year:Week" to total savings
+        val weeklySavings = mutableMapOf<String, Int>()
+        completedTiles.forEach { tile ->
+            calendar.timeInMillis = tile.completedAt!!
+            val key = "${calendar.get(Calendar.YEAR)}:${calendar.get(Calendar.WEEK_OF_YEAR)}"
+            weeklySavings[key] = (weeklySavings[key] ?: 0) + tile.amount
+        }
+        
+        val bestWeek = weeklySavings.values.maxOrNull() ?: 0
+        val avgWeekly = if (weeklySavings.isNotEmpty()) weeklySavings.values.average().toInt() else 0
+        
+        // Streak calculation (consecutive weeks ending with current week)
+        var streak = 0
+        calendar.timeInMillis = System.currentTimeMillis()
+        var currentYear = calendar.get(Calendar.YEAR)
+        var currentWeek = calendar.get(Calendar.WEEK_OF_YEAR)
+        
+        while (weeklySavings.containsKey("$currentYear:$currentWeek")) {
+            streak++
+            calendar.add(Calendar.WEEK_OF_YEAR, -1)
+            currentYear = calendar.get(Calendar.YEAR)
+            currentWeek = calendar.get(Calendar.WEEK_OF_YEAR)
+        }
+        
+        ConsistencyData(streak, bestWeek, avgWeekly)
+    }
+
+    // --- MILESTONE LOGIC ---
 
     val groupedTiles by derivedStateOf {
         val groups = mutableListOf<MilestoneGroup>()
@@ -62,12 +133,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         }
         
         if (currentGroupTiles.isNotEmpty()) {
-            groups.add(
-                MilestoneGroup(
-                    name = "Final Milestone",
-                    tiles = currentGroupTiles
-                )
-            )
+            groups.add(MilestoneGroup(name = "Final Milestone", tiles = currentGroupTiles))
         }
 
         groups.mapIndexed { index, group ->
@@ -77,18 +143,18 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         viewModelScope.launch {
-            val savedCompletedIds = dataStore.completedTileIds.first()
+            val savedTilesData = dataStore.completedTilesData.first()
             val savedUnlockedCount = dataStore.unlockedMilestoneCount.first()
             val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
             
             unlockedMilestoneCount = savedUnlockedCount
             isOnboardingCompleted = savedOnboardingStatus
             
-            // Restore tile completion state
-            savedCompletedIds.forEach { id ->
+            // Restore tile completion state and timestamps
+            savedTilesData.forEach { (id, timestamp) ->
                 val index = tiles.indexOfFirst { it.id == id }
                 if (index != -1) {
-                    tiles[index] = tiles[index].copy(isCompleted = true)
+                    tiles[index] = tiles[index].copy(isCompleted = true, completedAt = timestamp)
                 }
             }
         }
@@ -98,10 +164,14 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         val index = tiles.indexOfFirst { it.id == id }
         if (index != -1) {
             val wasCompleted = tiles[index].isCompleted
-            tiles[index] = tiles[index].copy(isCompleted = !wasCompleted)
+            val nowCompleted = !wasCompleted
             
-            // If we just completed a tile and it was the last tile in the latest unlocked group
-            if (!wasCompleted) {
+            tiles[index] = tiles[index].copy(
+                isCompleted = nowCompleted,
+                completedAt = if (nowCompleted) System.currentTimeMillis() else null
+            )
+            
+            if (nowCompleted) {
                 val latestUnlockedIndex = unlockedMilestoneCount - 1
                 if (latestUnlockedIndex < groupedTiles.size) {
                     val latestGroup = groupedTiles[latestUnlockedIndex]
@@ -129,8 +199,10 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     private fun saveState() {
         viewModelScope.launch {
-            val completedIds = tiles.filter { it.isCompleted }.map { it.id }.toSet()
-            dataStore.saveProgress(completedIds, unlockedMilestoneCount)
+            val completedData = tiles
+                .filter { it.isCompleted && it.completedAt != null }
+                .associate { it.id to it.completedAt!! }
+            dataStore.saveProgress(completedData, unlockedMilestoneCount)
         }
     }
 
@@ -139,19 +211,14 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         val denominations = listOf(50, 100, 150, 200, 300, 500)
         var currentSum = 0
         var idCounter = 0
-        
-        // Use a fixed seed for deterministic tile generation across app restarts
         val random = Random(42)
 
         while (currentSum < target) {
             val remaining = target - currentSum
             val possibleDenominations = denominations.filter { it <= remaining }
-            
             val amount = if (possibleDenominations.isNotEmpty()) {
                 possibleDenominations[random.nextInt(possibleDenominations.size)]
-            } else {
-                remaining 
-            }
+            } else { remaining }
             
             result.add(SavingsTile(idCounter++, amount))
             currentSum += amount
@@ -169,3 +236,9 @@ data class MilestoneGroup(
     val isCompleted: Boolean
         get() = tiles.all { it.isCompleted }
 }
+
+data class ConsistencyData(
+    val streak: Int,
+    val bestWeek: Int,
+    val avgWeekly: Int
+)

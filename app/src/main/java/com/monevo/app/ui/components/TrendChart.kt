@@ -8,6 +8,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -16,9 +17,30 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.theme.*
+import java.util.*
 
 @Composable
-fun TrendChart(modifier: Modifier = Modifier) {
+fun TrendChart(
+    heights: List<Float>,
+    modifier: Modifier = Modifier
+) {
+    val days = listOf("M", "T", "W", "T", "F", "S", "S")
+    
+    // Determine current day index (0 for Mon, 6 for Sun)
+    val currentDayIndex = remember {
+        val calendar = Calendar.getInstance()
+        when (calendar.get(Calendar.DAY_OF_WEEK)) {
+            Calendar.MONDAY -> 0
+            Calendar.TUESDAY -> 1
+            Calendar.WEDNESDAY -> 2
+            Calendar.THURSDAY -> 3
+            Calendar.FRIDAY -> 4
+            Calendar.SATURDAY -> 5
+            Calendar.SUNDAY -> 6
+            else -> 0
+        }
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
@@ -41,9 +63,6 @@ fun TrendChart(modifier: Modifier = Modifier) {
             
             Spacer(modifier = Modifier.height(24.dp))
             
-            val days = listOf("M", "T", "W", "T", "F", "S", "S")
-            val heights = listOf(0.35f, 0.45f, 0.42f, 0.62f, 0.78f, 0.95f, 0.88f)
-            
             Column(modifier = Modifier.fillMaxSize()) {
                 // Bars Area
                 Row(
@@ -61,10 +80,10 @@ fun TrendChart(modifier: Modifier = Modifier) {
                             Box(
                                 modifier = Modifier
                                     .width(8.dp)
-                                    .fillMaxHeight(height)
+                                    .fillMaxHeight(height.coerceIn(0.01f, 1f)) // Ensure tiny bar for visibility if > 0
                                     .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                                     .background(
-                                        if (index == 5) AccentGold 
+                                        if (index == currentDayIndex) AccentGold 
                                         else SoftGold.copy(alpha = 0.1f + (height * 0.2f))
                                     )
                             )
@@ -97,7 +116,7 @@ fun TrendChart(modifier: Modifier = Modifier) {
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 9.sp,
                             textAlign = TextAlign.Center,
-                            color = if (index == 5) PrimaryText else SecondaryText.copy(alpha = 0.3f)
+                            color = if (index == currentDayIndex) PrimaryText else SecondaryText.copy(alpha = 0.3f)
                         )
                     }
                 }

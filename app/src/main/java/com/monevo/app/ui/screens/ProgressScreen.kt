@@ -11,15 +11,13 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.SavingsViewModel
-import com.monevo.app.ui.components.AnalyticsCard
-import com.monevo.app.ui.components.CircularProgressSection
-import com.monevo.app.ui.components.ConsistencySection
-import com.monevo.app.ui.components.MilestonesProgress
-import com.monevo.app.ui.components.TrendChart
+import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.PrimaryText
 
 @Composable
 fun ProgressScreen(viewModel: SavingsViewModel) {
+    val consistency = viewModel.consistencyStats
+    
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -37,7 +35,7 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
             letterSpacing = (-0.5).sp
         )
         
-        Spacer(modifier = Modifier.height(16.dp)) // Tighter rhythm after title
+        Spacer(modifier = Modifier.height(16.dp))
         
         CircularProgressSection(
             progress = viewModel.progress,
@@ -54,19 +52,19 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
                 title = "Remaining",
                 value = "₹%,d".format(viewModel.goalAmount - viewModel.totalSaved),
                 isHighlighted = false,
-                modifier = Modifier.weight(1.1f) // Slightly more weight to information
+                modifier = Modifier.weight(1.1f)
             )
             AnalyticsCard(
                 title = "Completed",
                 value = "${viewModel.tiles.count { it.isCompleted }} tiles",
                 isHighlighted = true,
-                modifier = Modifier.weight(0.9f) // Supporting achievement
+                modifier = Modifier.weight(0.9f)
             )
         }
         
         Spacer(modifier = Modifier.height(20.dp))
         
-        TrendChart()
+        TrendChart(heights = viewModel.weeklyMomentum)
 
         Spacer(modifier = Modifier.height(20.dp))
 
@@ -75,9 +73,9 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
         Spacer(modifier = Modifier.height(20.dp))
 
         ConsistencySection(
-            streakWeeks = 5,
-            bestWeekAmount = 2500,
-            avgWeeklyAmount = 850
+            streakWeeks = consistency.streak,
+            bestWeekAmount = consistency.bestWeek,
+            avgWeeklyAmount = consistency.avgWeekly
         )
         
         Spacer(modifier = Modifier.height(100.dp))

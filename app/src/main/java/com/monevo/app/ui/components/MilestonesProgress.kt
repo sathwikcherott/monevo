@@ -1,18 +1,18 @@
 package com.monevo.app.ui.components
 
+import androidx.compose.foundation.border
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.theme.*
@@ -22,12 +22,27 @@ fun MilestonesProgress(
     totalSaved: Int,
     modifier: Modifier = Modifier
 ) {
-    val milestones = listOf(
-        MilestoneData(5000, "₹5K"),
-        MilestoneData(10000, "₹10K"),
-        MilestoneData(25000, "₹25K"),
-        MilestoneData(50000, "Goal")
-    )
+    val milestones = remember {
+        listOf(
+            MilestoneData(0, "0"),
+            MilestoneData(5000, "₹5K"),
+            MilestoneData(10000, "₹10K"),
+            MilestoneData(20000, "₹20K"),
+            MilestoneData(30000, "₹30K"),
+            MilestoneData(40000, "₹40K"),
+            MilestoneData(50000, "₹50K")
+        )
+    }
+
+    val targetIndex = milestones.indexOfFirst { totalSaved < it.amount }.let {
+        if (it == -1) milestones.size - 1 else it
+    }
+    
+    val currentTarget = milestones[targetIndex]
+    val lowerBound = if (targetIndex > 0) milestones[targetIndex - 1].amount else 0
+    val savedInThisMilestone = (totalSaved - lowerBound).coerceAtLeast(0)
+    val milestoneTotal = currentTarget.amount - lowerBound
+    val milestonePercentage = if (milestoneTotal > 0) (savedInThisMilestone.toFloat() / milestoneTotal * 100).toInt() else 0
 
     Card(
         modifier = modifier.fillMaxWidth(),
@@ -35,33 +50,46 @@ fun MilestonesProgress(
         shape = RoundedCornerShape(24.dp)
     ) {
         Column(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth()
+            modifier = Modifier.padding(20.dp).fillMaxWidth()
         ) {
-            Text(
-                text = "Milestone Path",
-                style = MaterialTheme.typography.labelSmall,
-                color = SecondaryText,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Milestone Path",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = SecondaryText,
+                    fontWeight = FontWeight.Medium
+                )
+                
+                if (totalSaved < milestones.last().amount) {
+                    Text(
+                        text = "₹%,d left to ${currentTarget.label}".format(currentTarget.amount - totalSaved),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SoftGold,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(28.dp))
+            Spacer(modifier = Modifier.height(32.dp))
 
             Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp),
                 contentAlignment = Alignment.CenterStart
             ) {
-                // Background Path Line
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(2.dp)
-                        .background(DividerColor.copy(alpha = 0.3f))
-                )
+                Box(modifier = Modifier.fillMaxWidth().height(2.dp).background(DividerColor.copy(alpha = 0.2f)))
+
+                BoxWithConstraints(modifier = Modifier.fillMaxWidth()) {
+                    val totalSegments = milestones.size - 1
+                    val segmentWidth = maxWidth / totalSegments
+                    val progressInCurrent = if (milestoneTotal > 0) savedInThisMilestone.toFloat() / milestoneTotal else 0f
+                    val activeWidth = (segmentWidth * (targetIndex - 1).coerceAtLeast(0)) + (segmentWidth * progressInCurrent)
+                    
+                    Box(modifier = Modifier.width(activeWidth).height(2.dp).background(AccentGold))
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -69,61 +97,57 @@ fun MilestonesProgress(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     milestones.forEachIndexed { index, milestone ->
-                        val isCompleted = totalSaved >= milestone.amount
-                        val isCurrent = !isCompleted && (index == 0 || totalSaved >= milestones[index - 1].amount)
+                        val isReached = totalSaved >= milestone.amount
+                        val isTarget = index == targetIndex && !isReached
                         
                         MilestoneNode(
                             label = milestone.label,
-                            isCompleted = isCompleted,
-                            isCurrent = isCurrent
+                            isReached = isReached,
+                            isTarget = isTarget
                         )
                     }
                 }
             }
             
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "$milestonePercentage% of this milestone",
+                style = MaterialTheme.typography.labelSmall,
+                color = SecondaryText,
+                fontSize = 11.sp
+            )
         }
     }
 }
 
 @Composable
-private fun MilestoneNode(
-    label: String,
-    isCompleted: Boolean,
-    isCurrent: Boolean
-) {
-    val alpha = if (isCompleted) 0.6f else if (isCurrent) 1f else 0.3f
-    val color = if (isCurrent) AccentGold else if (isCompleted) SuccessGreen else SecondaryText
-
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.alpha(alpha)
-    ) {
-        Box(
-            modifier = Modifier
-                .size(if (isCurrent) 12.dp else 8.dp)
-                .clip(CircleShape)
-                .background(color),
-            contentAlignment = Alignment.Center
-        ) {
-            if (isCompleted) {
-                Icon(
-                    imageVector = Icons.Default.Check,
-                    contentDescription = null,
-                    tint = Background,
-                    modifier = Modifier.size(6.dp)
-                )
-            }
+private fun MilestoneNode(label: String, isReached: Boolean, isTarget: Boolean) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        if (isTarget) {
+            Box(
+                modifier = Modifier
+                    .size(14.dp)
+                    .border(2.dp, AccentGold, CircleShape)
+                    .background(Background, CircleShape)
+            )
+        } else {
+            Box(
+                modifier = Modifier
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(if (isReached) AccentGold else SecondaryText.copy(alpha = 0.3f))
+            )
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(14.dp))
 
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            fontSize = 10.sp,
-            fontWeight = if (isCurrent) FontWeight.Bold else FontWeight.Medium,
-            color = if (isCurrent) PrimaryText else SecondaryText
+            fontSize = 9.sp,
+            fontWeight = if (isTarget) FontWeight.Bold else FontWeight.Medium,
+            color = if (isTarget) PrimaryText else SecondaryText.copy(alpha = if (isReached) 0.8f else 0.3f)
         )
     }
 }

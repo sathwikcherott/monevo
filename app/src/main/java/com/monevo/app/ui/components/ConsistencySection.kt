@@ -25,16 +25,13 @@ fun ConsistencySection(
         shape = RoundedCornerShape(24.dp)
     ) {
         Column(
-            modifier = Modifier
-                .padding(20.dp)
-                .fillMaxWidth()
+            modifier = Modifier.padding(20.dp).fillMaxWidth()
         ) {
             Text(
                 text = "Consistency",
                 style = MaterialTheme.typography.labelSmall,
                 color = SecondaryText,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
+                fontWeight = FontWeight.Medium
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -42,21 +39,15 @@ fun ConsistencySection(
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Bottom
             ) {
                 ConsistencyItem(
                     label = "Current Streak",
-                    value = "$streakWeeks weeks",
+                    value = if (streakWeeks == 1) "1 week" else "$streakWeeks weeks",
                     modifier = Modifier.weight(1f)
                 )
                 
-                // Subtle Vertical Divider
-                Box(
-                    modifier = Modifier
-                        .height(32.dp)
-                        .width(1.dp)
-                        .background(DividerColor.copy(alpha = 0.2f))
-                )
+                Box(modifier = Modifier.height(24.dp).width(1.dp).background(DividerColor.copy(alpha = 0.2f)))
 
                 ConsistencyItem(
                     label = "Best Week",
@@ -64,13 +55,7 @@ fun ConsistencySection(
                     modifier = Modifier.weight(1f)
                 )
 
-                // Subtle Vertical Divider
-                Box(
-                    modifier = Modifier
-                        .height(32.dp)
-                        .width(1.dp)
-                        .background(DividerColor.copy(alpha = 0.2f))
-                )
+                Box(modifier = Modifier.height(24.dp).width(1.dp).background(DividerColor.copy(alpha = 0.2f)))
 
                 ConsistencyItem(
                     label = "Avg Weekly",
@@ -79,7 +64,7 @@ fun ConsistencySection(
                 )
             }
             
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(8.dp))
         }
     }
 }
@@ -96,7 +81,7 @@ private fun ConsistencyItem(
     ) {
         Text(
             text = value,
-            style = MaterialTheme.typography.titleSmall,
+            style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
             color = PrimaryText
         )
@@ -104,7 +89,7 @@ private fun ConsistencyItem(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            fontSize = 10.sp,
+            fontSize = 9.sp,
             color = SecondaryText,
             fontWeight = FontWeight.Medium
         )
