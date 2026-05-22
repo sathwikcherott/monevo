@@ -27,7 +27,8 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         addAll(generateTiles(goalAmount))
     }
 
-    var unlockedMilestoneCount by mutableIntStateOf(2)
+    // Single source of truth for progression pacing (offset ahead of current progress)
+    private var unlockedMilestoneOffset by mutableIntStateOf(1)
     var showUnlockDialog by mutableStateOf(false)
     var isOnboardingCompleted by mutableStateOf(true)
 
@@ -45,8 +46,6 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         val calendar = Calendar.getInstance()
         val currentWeek = calendar.get(Calendar.WEEK_OF_YEAR)
         val currentYear = calendar.get(Calendar.YEAR)
-        
-        // Array for Mon-Sun (0 to 6)
         val daySavings = FloatArray(7) { 0f }
         
         tiles.filter { it.isCompleted && it.completedAt != null }.forEach { tile ->
@@ -54,7 +53,6 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             if (calendar.get(Calendar.WEEK_OF_YEAR) == currentWeek && 
                 calendar.get(Calendar.YEAR) == currentYear) {
                 
-                // Adjust day of week (Calendar.SUNDAY is 1, Monday is 2...)
                 val day = when (calendar.get(Calendar.DAY_OF_WEEK)) {
                     Calendar.MONDAY -> 0
                     Calendar.TUESDAY -> 1
@@ -68,8 +66,6 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                 daySavings[day] += tile.amount.toFloat()
             }
         }
-        
-        // Normalize heights (max bar will be around 1.0f)
         val maxAmount = daySavings.maxOrNull() ?: 1f
         daySavings.map { if (maxAmount > 0) it / maxAmount else 0f }
     }
@@ -79,8 +75,6 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         if (completedTiles.isEmpty()) return@derivedStateOf ConsistencyData(0, 0, 0)
         
         val calendar = Calendar.getInstance()
-        
-        // Map of "Year:Week" to total savings
         val weeklySavings = mutableMapOf<String, Int>()
         completedTiles.forEach { tile ->
             calendar.timeInMillis = tile.completedAt!!
@@ -91,7 +85,6 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         val bestWeek = weeklySavings.values.maxOrNull() ?: 0
         val avgWeekly = if (weeklySavings.isNotEmpty()) weeklySavings.values.average().toInt() else 0
         
-        // Streak calculation (consecutive weeks ending with current week)
         var streak = 0
         calendar.timeInMillis = System.currentTimeMillis()
         var currentYear = calendar.get(Calendar.YEAR)
@@ -103,7 +96,6 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             currentYear = calendar.get(Calendar.YEAR)
             currentWeek = calendar.get(Calendar.WEEK_OF_YEAR)
         }
-        
         ConsistencyData(streak, bestWeek, avgWeekly)
     }
 
@@ -136,21 +128,23 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             groups.add(MilestoneGroup(name = "Final Milestone", tiles = currentGroupTiles))
         }
 
+        // SINGLE SOURCE OF TRUTH LOCKING LOGIC
+        // A milestone is locked if its index is beyond (completed milestones + user-chosen buffer)
+        val completedMilestonesCount = totalSaved / milestoneStep
         groups.mapIndexed { index, group ->
-            group.copy(isLocked = index >= unlockedMilestoneCount)
+            group.copy(isLocked = index > completedMilestonesCount + unlockedMilestoneOffset)
         }
     }
 
     init {
         viewModelScope.launch {
             val savedTilesData = dataStore.completedTilesData.first()
-            val savedUnlockedCount = dataStore.unlockedMilestoneCount.first()
+            val savedUnlockedOffset = dataStore.unlockedMilestoneCount.first() // Using same key for now
             val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
             
-            unlockedMilestoneCount = savedUnlockedCount
+            unlockedMilestoneOffset = savedUnlockedOffset.coerceIn(1, 2)
             isOnboardingCompleted = savedOnboardingStatus
             
-            // Restore tile completion state and timestamps
             savedTilesData.forEach { (id, timestamp) ->
                 val index = tiles.indexOfFirst { it.id == id }
                 if (index != -1) {
@@ -172,12 +166,11 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             )
             
             if (nowCompleted) {
-                val latestUnlockedIndex = unlockedMilestoneCount - 1
-                if (latestUnlockedIndex < groupedTiles.size) {
-                    val latestGroup = groupedTiles[latestUnlockedIndex]
-                    if (latestGroup.isCompleted) {
-                        showUnlockDialog = true
-                    }
+                // If the group we just potentially finished is the "edge" of current visibility
+                val completedMilestonesCount = totalSaved / milestoneStep
+                val visibilityLimit = completedMilestonesCount + unlockedMilestoneOffset
+                if (visibilityLimit < groupedTiles.size && groupedTiles[visibilityLimit - 1].isCompleted) {
+                    showUnlockDialog = true
                 }
             }
             saveState()
@@ -185,7 +178,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun unlockMilestones(count: Int) {
-        unlockedMilestoneCount += count
+        unlockedMilestoneOffset = count
         showUnlockDialog = false
         saveState()
     }
@@ -202,7 +195,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             val completedData = tiles
                 .filter { it.isCompleted && it.completedAt != null }
                 .associate { it.id to it.completedAt!! }
-            dataStore.saveProgress(completedData, unlockedMilestoneCount)
+            dataStore.saveProgress(completedData, unlockedMilestoneOffset)
         }
     }
 
