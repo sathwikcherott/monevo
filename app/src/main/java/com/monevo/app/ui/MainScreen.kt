@@ -19,6 +19,7 @@ import androidx.navigation.compose.rememberNavController
 import com.monevo.app.ui.components.MonevoBottomNavigation
 import com.monevo.app.ui.screens.HomeScreen
 import com.monevo.app.ui.screens.InsightsScreen
+import com.monevo.app.ui.screens.OnboardingScreen
 import com.monevo.app.ui.screens.ProgressScreen
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
@@ -32,40 +33,44 @@ fun MainScreen() {
     val navController = rememberNavController()
     val viewModel: SavingsViewModel = viewModel()
     
-    val items = listOf(
-        Screen.Home,
-        Screen.Progress,
-        Screen.Insights
-    )
+    if (!viewModel.isOnboardingCompleted) {
+        OnboardingScreen(onFinish = { viewModel.completeOnboarding() })
+    } else {
+        val items = listOf(
+            Screen.Home,
+            Screen.Progress,
+            Screen.Insights
+        )
 
-    Scaffold(
-        bottomBar = {
-            val navBackStackEntry by navController.currentBackStackEntryAsState()
-            val currentDestination = navBackStackEntry?.destination
-            
-            MonevoBottomNavigation(
-                screens = items,
-                currentDestination = currentDestination,
-                onNavigate = { screen ->
-                    navController.navigate(screen.route) {
-                        popUpTo(navController.graph.findStartDestination().id) {
-                            saveState = true
+        Scaffold(
+            bottomBar = {
+                val navBackStackEntry by navController.currentBackStackEntryAsState()
+                val currentDestination = navBackStackEntry?.destination
+                
+                MonevoBottomNavigation(
+                    screens = items,
+                    currentDestination = currentDestination,
+                    onNavigate = { screen ->
+                        navController.navigate(screen.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
                         }
-                        launchSingleTop = true
-                        restoreState = true
                     }
-                }
-            )
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController = navController,
-            startDestination = Screen.Home.route,
-            modifier = Modifier.padding(innerPadding)
-        ) {
-            composable(Screen.Home.route) { HomeScreen(viewModel) }
-            composable(Screen.Progress.route) { ProgressScreen(viewModel) }
-            composable(Screen.Insights.route) { InsightsScreen() }
+                )
+            }
+        ) { innerPadding ->
+            NavHost(
+                navController = navController,
+                startDestination = Screen.Home.route,
+                modifier = Modifier.padding(innerPadding)
+            ) {
+                composable(Screen.Home.route) { HomeScreen(viewModel) }
+                composable(Screen.Progress.route) { ProgressScreen(viewModel) }
+                composable(Screen.Insights.route) { InsightsScreen() }
+            }
         }
     }
 }

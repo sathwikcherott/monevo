@@ -28,6 +28,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     var unlockedMilestoneCount by mutableIntStateOf(2)
     var showUnlockDialog by mutableStateOf(false)
+    var isOnboardingCompleted by mutableStateOf(true) // Default to true to avoid flicker before load
 
     val totalSaved by derivedStateOf {
         tiles.filter { it.isCompleted }.sumOf { it.amount }
@@ -78,8 +79,10 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         viewModelScope.launch {
             val savedCompletedIds = dataStore.completedTileIds.first()
             val savedUnlockedCount = dataStore.unlockedMilestoneCount.first()
+            val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
             
             unlockedMilestoneCount = savedUnlockedCount
+            isOnboardingCompleted = savedOnboardingStatus
             
             // Restore tile completion state
             savedCompletedIds.forEach { id ->
@@ -115,6 +118,13 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         unlockedMilestoneCount += count
         showUnlockDialog = false
         saveState()
+    }
+
+    fun completeOnboarding() {
+        viewModelScope.launch {
+            dataStore.saveOnboardingCompleted()
+            isOnboardingCompleted = true
+        }
     }
 
     private fun saveState() {

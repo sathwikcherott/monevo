@@ -4,10 +4,10 @@
     <selectionStates>
       <SelectionState runConfigName="app">
         <option name="selectionMode" value="DROPDOWN" />
-        <DropdownSelection timestamp="2026-05-22T07:04:06.267779Z">
+        <DropdownSelection timestamp="2026-05-22T08:52:18.770698Z">
           <Target type="DEFAULT_BOOT">
             <handle>
-              <DeviceId pluginId="PhysicalDevice" identifier="serial=RZCWA2DH3PH" />
+              <DeviceId pluginId="LocalEmulator" identifier="path=/Users/sathwik/.android/avd/Samsung_M34.avd" />
             </handle>
           </Target>
         </DropdownSelection>
