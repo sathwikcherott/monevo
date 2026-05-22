@@ -54,7 +54,17 @@ class SavingsViewModel : ViewModel() {
                 )
             )
         }
-        groups
+
+        // Progression Logic: 
+        // 1st and 2nd are always unlocked initially.
+        // Subsequent ones unlock when the previous one is completed.
+        groups.mapIndexed { index, group ->
+            val isLocked = when {
+                index <= 1 -> false // First two are always available
+                else -> !groups[index - 1].isCompleted // Locked if previous is not completed
+            }
+            group.copy(isLocked = isLocked)
+        }
     }
 
     fun toggleTile(id: Int) {
@@ -90,5 +100,9 @@ class SavingsViewModel : ViewModel() {
 
 data class MilestoneGroup(
     val name: String,
-    val tiles: List<SavingsTile>
-)
+    val tiles: List<SavingsTile>,
+    val isLocked: Boolean = false
+) {
+    val isCompleted: Boolean
+        get() = tiles.all { it.isCompleted }
+}

@@ -18,10 +18,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
+import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
@@ -37,7 +39,7 @@ import com.monevo.app.ui.theme.*
 @Composable
 fun HomeScreen(viewModel: SavingsViewModel) {
     val groupedTiles by remember { derivedStateOf { viewModel.groupedTiles } }
-    var expandedSectionIndex by remember { mutableStateOf(0) } // Default first section expanded
+    var expandedSectionIndex by remember { mutableStateOf(0) }
 
     Column(
         modifier = Modifier
@@ -72,14 +74,17 @@ fun HomeScreen(viewModel: SavingsViewModel) {
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             groupedTiles.forEachIndexed { index, group ->
-                val isExpanded = expandedSectionIndex == index
+                val isExpanded = expandedSectionIndex == index && !group.isLocked
                 
                 item(key = "header_$index") {
                     MilestoneAccordionHeader(
                         name = group.name,
                         isExpanded = isExpanded,
+                        isLocked = group.isLocked,
                         onClick = {
-                            expandedSectionIndex = if (isExpanded) -1 else index
+                            if (!group.isLocked) {
+                                expandedSectionIndex = if (isExpanded) -1 else index
+                            }
                         }
                     )
                 }
@@ -117,7 +122,6 @@ fun TileGrid(tiles: List<SavingsTile>, viewModel: SavingsViewModel) {
                         }
                     }
                 }
-                // Fill empty slots in the last row if needed
                 if (rowTiles.size < 5) {
                     repeat(5 - rowTiles.size) {
                         Spacer(modifier = Modifier.weight(1f))
@@ -132,6 +136,7 @@ fun TileGrid(tiles: List<SavingsTile>, viewModel: SavingsViewModel) {
 fun MilestoneAccordionHeader(
     name: String,
     isExpanded: Boolean,
+    isLocked: Boolean,
     onClick: () -> Unit
 ) {
     val rotation by animateFloatAsState(
@@ -140,10 +145,12 @@ fun MilestoneAccordionHeader(
     )
 
     Surface(
-        onClick = onClick,
+        onClick = if (isLocked) ({}) else onClick,
         color = PrimaryCard,
         shape = RoundedCornerShape(16.dp),
-        modifier = Modifier.fillMaxWidth()
+        modifier = Modifier
+            .fillMaxWidth()
+            .alpha(if (isLocked) 0.6f else 1f)
     ) {
         Row(
             modifier = Modifier
@@ -151,20 +158,33 @@ fun MilestoneAccordionHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text(
-                text = name,
-                style = MaterialTheme.typography.labelLarge,
-                color = if (isExpanded) SoftGold else SecondaryText,
-                fontWeight = FontWeight.SemiBold,
-                letterSpacing = 0.5.sp
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                if (isLocked) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Locked",
+                        tint = SecondaryText,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(12.dp))
+                }
+                Text(
+                    text = name,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = if (isExpanded) SoftGold else if (isLocked) SecondaryText else PrimaryText,
+                    fontWeight = FontWeight.SemiBold,
+                    letterSpacing = 0.5.sp
+                )
+            }
             
-            Icon(
-                imageVector = Icons.Default.KeyboardArrowDown,
-                contentDescription = if (isExpanded) "Collapse" else "Expand",
-                tint = if (isExpanded) SoftGold else SecondaryText,
-                modifier = Modifier.rotate(rotation)
-            )
+            if (!isLocked) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isExpanded) "Collapse" else "Expand",
+                    tint = if (isExpanded) SoftGold else SecondaryText,
+                    modifier = Modifier.rotate(rotation)
+                )
+            }
         }
     }
 }
