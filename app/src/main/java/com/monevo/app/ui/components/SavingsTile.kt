@@ -52,13 +52,13 @@ fun SavingsTileItem(
     )
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (tile.isCompleted) SuccessGreen else ElevatedCard,
+        targetValue = if (tile.isCompleted) SuccessGreen else ElevatedCard.copy(alpha = 0.6f),
         animationSpec = spring(stiffness = Spring.StiffnessLow), 
         label = "color"
     )
     
     val contentColor by animateColorAsState(
-        targetValue = if (tile.isCompleted) Background else PrimaryText,
+        targetValue = if (tile.isCompleted) Background else PrimaryText.copy(alpha = 0.7f),
         animationSpec = spring(stiffness = Spring.StiffnessLow), 
         label = "contentColor"
     )
@@ -69,11 +69,11 @@ fun SavingsTileItem(
                 scaleX = scale
                 scaleY = scale
             }
-            .aspectRatio(1.1f)
+            .aspectRatio(1.15f) // Slightly shorter for a cleaner dashboard chip feel
             .shadow(
-                elevation = if (tile.isCompleted) 6.dp else 0.dp,
+                elevation = if (tile.isCompleted) 4.dp else 0.dp, // Softer shadow
                 shape = RoundedCornerShape(12.dp),
-                spotColor = SuccessGreen.copy(alpha = 0.25f),
+                spotColor = SuccessGreen.copy(alpha = 0.2f),
                 ambientColor = SuccessGreen.copy(alpha = 0.1f)
             )
             .clip(RoundedCornerShape(12.dp))

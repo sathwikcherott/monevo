@@ -64,8 +64,8 @@ fun HomeScreen(viewModel: SavingsViewModel) {
         
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp) // More breathing room between milestones
         ) {
             groupedTiles.forEachIndexed { index, group ->
                 val isExpanded = expandedSectionIndex == index && !group.isLocked

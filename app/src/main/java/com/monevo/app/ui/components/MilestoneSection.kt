@@ -102,12 +102,12 @@ fun TileGrid(
     
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(10.dp) // Refined vertical rhythm
     ) {
         rows.forEach { rowTiles ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp) // Tighter horizontal rhythm
             ) {
                 rowTiles.forEach { tile ->
                     Box(modifier = Modifier.weight(1f)) {
