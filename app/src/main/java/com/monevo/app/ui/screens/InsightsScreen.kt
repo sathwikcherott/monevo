@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.theme.*
 
 @Composable
@@ -17,19 +18,20 @@ fun InsightsScreen() {
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 20.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
         Text(
             text = "Insights",
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = PrimaryText
+            color = PrimaryText,
+            letterSpacing = (-0.5).sp
         )
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
         InsightItem(
             title = "Savings Velocity",
@@ -37,7 +39,7 @@ fun InsightsScreen() {
             emoji = "🚀"
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         
         InsightItem(
             title = "Consistency Streak",
@@ -45,11 +47,11 @@ fun InsightsScreen() {
             emoji = "🔥"
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(12.dp))
         
         InsightItem(
             title = "Smart Suggestion",
-            description = "Tapping just two more ₹150 tiles will reach your weekly goal.",
+            description = "Tapping just four more ₹150 tiles will reach your weekly goal.",
             emoji = "💡"
         )
         
@@ -65,22 +67,23 @@ fun InsightItem(title: String, description: String, emoji: String) {
         shape = RoundedCornerShape(24.dp)
     ) {
         Row(
-            modifier = Modifier.padding(24.dp)
+            modifier = Modifier.padding(18.dp)
         ) {
-            Text(text = emoji, style = MaterialTheme.typography.headlineSmall)
+            Text(text = emoji, style = MaterialTheme.typography.titleLarge)
             Spacer(modifier = Modifier.width(16.dp))
             Column {
                 Text(
                     text = title,
-                    style = MaterialTheme.typography.titleMedium,
+                    style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryText
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = description,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = SecondaryText
+                    style = MaterialTheme.typography.bodySmall,
+                    color = SecondaryText,
+                    lineHeight = 16.sp
                 )
             }
         }

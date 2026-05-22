@@ -25,27 +25,28 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
-            .padding(horizontal = 24.dp)
+            .padding(horizontal = 20.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
         Text(
             text = "Progress",
-            style = MaterialTheme.typography.headlineLarge,
+            style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = PrimaryText
+            color = PrimaryText,
+            letterSpacing = (-0.5).sp
         )
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
-        CircularProgressSection(viewModel.progress, viewModel.totalSaved)
+        CircularProgressSection(viewModel.progress)
         
-        Spacer(modifier = Modifier.height(32.dp))
+        Spacer(modifier = Modifier.height(28.dp))
         
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(16.dp)
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             AnalyticsCard(
                 title = "Completed",
@@ -53,13 +54,13 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
                 modifier = Modifier.weight(1f)
             )
             AnalyticsCard(
-                title = "Left to save",
+                title = "Remaining",
                 value = "₹${viewModel.goalAmount - viewModel.totalSaved}",
                 modifier = Modifier.weight(1f)
             )
         }
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(20.dp))
         
         ChartPlaceholder()
         
@@ -68,15 +69,15 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
 }
 
 @Composable
-fun CircularProgressSection(progress: Float, total: Int) {
+fun CircularProgressSection(progress: Float) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .height(240.dp),
+            .height(200.dp),
         contentAlignment = Alignment.Center
     ) {
         val strokeWidth = 12.dp
-        Canvas(modifier = Modifier.size(200.dp)) {
+        Canvas(modifier = Modifier.size(160.dp)) {
             drawArc(
                 color = ElevatedCard,
                 startAngle = -90f,
@@ -87,7 +88,7 @@ fun CircularProgressSection(progress: Float, total: Int) {
             drawArc(
                 color = AccentGold,
                 startAngle = -90f,
-                sweepAngle = 360f * progress,
+                sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
                 style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
             )
@@ -102,7 +103,7 @@ fun CircularProgressSection(progress: Float, total: Int) {
             )
             Text(
                 text = "of target",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.labelSmall,
                 color = SecondaryText
             )
         }
@@ -121,13 +122,13 @@ fun AnalyticsCard(title: String, value: String, modifier: Modifier = Modifier) {
         ) {
             Text(
                 text = title,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = SecondaryText
             )
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = value,
-                style = MaterialTheme.typography.titleLarge,
+                style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = PrimaryText
             )
@@ -140,28 +141,28 @@ fun ChartPlaceholder() {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .height(200.dp),
+            .height(180.dp),
         colors = CardDefaults.cardColors(containerColor = PrimaryCard),
         shape = RoundedCornerShape(24.dp)
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(20.dp),
             contentAlignment = Alignment.BottomCenter
         ) {
             Row(
                 modifier = Modifier.fillMaxSize(),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalAlignment = Alignment.Bottom
             ) {
                 listOf(0.4f, 0.7f, 0.5f, 0.9f, 0.6f, 0.8f, 1.0f).forEach { height ->
                     Box(
                         modifier = Modifier
-                            .width(12.dp)
+                            .weight(1f)
                             .fillMaxHeight(height)
                             .clip(RoundedCornerShape(topStart = 6.dp, topEnd = 6.dp))
-                            .background(SoftGold.copy(alpha = 0.3f))
+                            .background(SoftGold.copy(alpha = 0.2f))
                     )
                 }
             }
@@ -169,7 +170,7 @@ fun ChartPlaceholder() {
             Text(
                 text = "Weekly Savings Trend",
                 modifier = Modifier.align(Alignment.TopStart),
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.labelSmall,
                 color = SecondaryText
             )
         }
