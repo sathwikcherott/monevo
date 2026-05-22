@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.AnalyticsCard
 import com.monevo.app.ui.components.CircularProgressSection
+import com.monevo.app.ui.components.MilestonesProgress
 import com.monevo.app.ui.components.TrendChart
 import com.monevo.app.ui.theme.PrimaryText
 
@@ -65,6 +66,10 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
         Spacer(modifier = Modifier.height(20.dp))
         
         TrendChart()
+
+        Spacer(modifier = Modifier.height(20.dp))
+
+        MilestonesProgress(totalSaved = viewModel.totalSaved)
         
         Spacer(modifier = Modifier.height(100.dp))
     }
