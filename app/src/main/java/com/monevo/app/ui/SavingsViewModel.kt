@@ -1,17 +1,24 @@
 package com.monevo.app.ui
 
+import android.app.Application
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.viewModelScope
 import com.monevo.app.config.MonevoConfig
+import com.monevo.app.data.MonevoDataStore
 import com.monevo.app.model.SavingsTile
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.launch
 import kotlin.random.Random
 
-class SavingsViewModel : ViewModel() {
+class SavingsViewModel(application: Application) : AndroidViewModel(application) {
+    private val dataStore = MonevoDataStore(application)
+    
     val goalAmount: Int = MonevoConfig.DEFAULT_SAVINGS_GOAL
     private val milestoneStep = MonevoConfig.MILESTONE_STEP
     
@@ -67,6 +74,23 @@ class SavingsViewModel : ViewModel() {
         }
     }
 
+    init {
+        viewModelScope.launch {
+            val savedCompletedIds = dataStore.completedTileIds.first()
+            val savedUnlockedCount = dataStore.unlockedMilestoneCount.first()
+            
+            unlockedMilestoneCount = savedUnlockedCount
+            
+            // Restore tile completion state
+            savedCompletedIds.forEach { id ->
+                val index = tiles.indexOfFirst { it.id == id }
+                if (index != -1) {
+                    tiles[index] = tiles[index].copy(isCompleted = true)
+                }
+            }
+        }
+    }
+
     fun toggleTile(id: Int) {
         val index = tiles.indexOfFirst { it.id == id }
         if (index != -1) {
@@ -83,12 +107,21 @@ class SavingsViewModel : ViewModel() {
                     }
                 }
             }
+            saveState()
         }
     }
 
     fun unlockMilestones(count: Int) {
         unlockedMilestoneCount += count
         showUnlockDialog = false
+        saveState()
+    }
+
+    private fun saveState() {
+        viewModelScope.launch {
+            val completedIds = tiles.filter { it.isCompleted }.map { it.id }.toSet()
+            dataStore.saveProgress(completedIds, unlockedMilestoneCount)
+        }
     }
 
     private fun generateTiles(target: Int): List<SavingsTile> {
@@ -96,13 +129,16 @@ class SavingsViewModel : ViewModel() {
         val denominations = listOf(50, 100, 150, 200, 300, 500)
         var currentSum = 0
         var idCounter = 0
+        
+        // Use a fixed seed for deterministic tile generation across app restarts
+        val random = Random(42)
 
         while (currentSum < target) {
             val remaining = target - currentSum
             val possibleDenominations = denominations.filter { it <= remaining }
             
             val amount = if (possibleDenominations.isNotEmpty()) {
-                possibleDenominations[Random.nextInt(possibleDenominations.size)]
+                possibleDenominations[random.nextInt(possibleDenominations.size)]
             } else {
                 remaining 
             }
@@ -111,7 +147,7 @@ class SavingsViewModel : ViewModel() {
             currentSum += amount
         }
         
-        return result.shuffled()
+        return result.shuffled(random)
     }
 }
 
