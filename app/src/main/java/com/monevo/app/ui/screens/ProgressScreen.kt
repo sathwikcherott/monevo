@@ -37,7 +37,10 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
         
         Spacer(modifier = Modifier.height(24.dp))
         
-        CircularProgressSection(viewModel.progress)
+        CircularProgressSection(
+            progress = viewModel.progress,
+            totalSaved = viewModel.totalSaved
+        )
         
         Spacer(modifier = Modifier.height(28.dp))
         

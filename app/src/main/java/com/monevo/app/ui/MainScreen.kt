@@ -2,9 +2,9 @@ package com.monevo.app.ui
 
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -25,7 +25,7 @@ import com.monevo.app.ui.screens.ProgressScreen
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Outlined.Home)
     object Progress : Screen("progress", "Progress", Icons.Outlined.DateRange)
-    object Insights : Screen("insights", "Insights", Icons.Outlined.Info)
+    object Growth : Screen("growth", "Growth", Icons.AutoMirrored.Outlined.ShowChart)
 }
 
 @Composable
@@ -39,7 +39,7 @@ fun MainScreen() {
         val items = listOf(
             Screen.Home,
             Screen.Progress,
-            Screen.Insights
+            Screen.Growth
         )
 
         Scaffold(
@@ -69,7 +69,7 @@ fun MainScreen() {
             ) {
                 composable(Screen.Home.route) { HomeScreen(viewModel) }
                 composable(Screen.Progress.route) { ProgressScreen(viewModel) }
-                composable(Screen.Insights.route) { InsightsScreen() }
+                composable(Screen.Growth.route) { InsightsScreen() }
             }
         }
     }

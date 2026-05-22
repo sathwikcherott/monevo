@@ -25,7 +25,7 @@ fun InsightsScreen() {
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Insights",
+            text = "Growth",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = PrimaryText,
@@ -52,7 +52,7 @@ fun InsightsScreen() {
         
         InsightItem(
             title = "Smart Suggestion",
-            description = "Tapping just four more ₹150 tiles will reach your weekly goal.",
+            description = "Tapping just two more ₹150 tiles will reach your weekly goal.",
             emoji = "💡"
         )
         
