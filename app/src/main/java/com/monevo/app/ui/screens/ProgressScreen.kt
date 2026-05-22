@@ -35,28 +35,30 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
             letterSpacing = (-0.5).sp
         )
         
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(16.dp)) // Tighter rhythm after title
         
         CircularProgressSection(
             progress = viewModel.progress,
             totalSaved = viewModel.totalSaved
         )
         
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             AnalyticsCard(
-                title = "Completed",
-                value = "${viewModel.tiles.count { it.isCompleted }}",
-                modifier = Modifier.weight(1f)
-            )
-            AnalyticsCard(
                 title = "Remaining",
                 value = "₹%,d".format(viewModel.goalAmount - viewModel.totalSaved),
-                modifier = Modifier.weight(1f)
+                isHighlighted = false,
+                modifier = Modifier.weight(1.1f) // Slightly more weight to information
+            )
+            AnalyticsCard(
+                title = "Completed",
+                value = "${viewModel.tiles.count { it.isCompleted }} tiles",
+                isHighlighted = true,
+                modifier = Modifier.weight(0.9f) // Supporting achievement
             )
         }
         

@@ -23,14 +23,15 @@ fun CircularProgressSection(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .padding(vertical = 32.dp),
+            // Reduced top padding to move the ring slightly upward
+            .padding(top = 12.dp, bottom = 32.dp),
         contentAlignment = Alignment.Center
     ) {
         val strokeWidth = 16.dp
         val ringSize = 200.dp
         
         Canvas(modifier = Modifier.size(ringSize)) {
-            // Background Track - Using DividerColor for clean, premium visibility
+            // Background Track - Consistent baseline
             drawArc(
                 color = DividerColor,
                 startAngle = -90f,
@@ -39,31 +40,30 @@ fun CircularProgressSection(
                 style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
             )
             
-            // Outer Ambient Glow - Wide and extremely soft
+            // Highly diffused ambient glow (blended into active arc)
             drawArc(
-                color = AccentGold.copy(alpha = 0.05f),
+                color = AccentGold.copy(alpha = 0.04f),
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
-                style = Stroke(width = (strokeWidth + 12.dp).toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = (strokeWidth + 16.dp).toPx(), cap = StrokeCap.Round)
             )
 
-            // Inner Soft Glow - More focused
             drawArc(
-                color = AccentGold.copy(alpha = 0.12f),
+                color = AccentGold.copy(alpha = 0.08f),
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
-                style = Stroke(width = (strokeWidth + 4.dp).toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = (strokeWidth + 8.dp).toPx(), cap = StrokeCap.Round)
             )
             
-            // Active Progress Arc
+            // Active Progress Arc - Sized precisely to match track visually
             drawArc(
                 color = AccentGold,
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
-                style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = (strokeWidth - 0.5.dp).toPx(), cap = StrokeCap.Round)
             )
         }
         
@@ -87,7 +87,7 @@ fun CircularProgressSection(
                 letterSpacing = 0.5.sp
             )
             
-            Spacer(modifier = Modifier.height(4.dp)) // Tightened rhythm
+            Spacer(modifier = Modifier.height(4.dp))
             
             Text(
                 text = "₹%,d saved".format(totalSaved),
