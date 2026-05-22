@@ -1,22 +1,29 @@
 package com.monevo.app.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.interaction.collectIsPressedAsState
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
@@ -29,6 +36,9 @@ import com.monevo.app.ui.theme.*
 
 @Composable
 fun HomeScreen(viewModel: SavingsViewModel) {
+    val groupedTiles by remember { derivedStateOf { viewModel.groupedTiles } }
+    var expandedSectionIndex by remember { mutableStateOf(0) } // Default first section expanded
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -54,30 +64,107 @@ fun HomeScreen(viewModel: SavingsViewModel) {
             totalCount = viewModel.tiles.size
         )
         
-        Spacer(modifier = Modifier.height(28.dp))
+        Spacer(modifier = Modifier.height(24.dp))
         
-        Text(
-            text = "Savings Tiles",
-            style = MaterialTheme.typography.labelLarge,
-            color = SecondaryText,
-            fontWeight = FontWeight.SemiBold,
-            letterSpacing = 0.5.sp
-        )
-        
-        Spacer(modifier = Modifier.height(12.dp))
-        
-        LazyVerticalGrid(
-            columns = GridCells.Fixed(5),
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp),
+        LazyColumn(
             modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(bottom = 100.dp)
+            contentPadding = PaddingValues(bottom = 100.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            items(viewModel.tiles, key = { it.id }) { tile ->
-                SavingsTileItem(tile) {
-                    viewModel.toggleTile(tile.id)
+            groupedTiles.forEachIndexed { index, group ->
+                val isExpanded = expandedSectionIndex == index
+                
+                item(key = "header_$index") {
+                    MilestoneAccordionHeader(
+                        name = group.name,
+                        isExpanded = isExpanded,
+                        onClick = {
+                            expandedSectionIndex = if (isExpanded) -1 else index
+                        }
+                    )
+                }
+                
+                item(key = "content_$index") {
+                    AnimatedVisibility(
+                        visible = isExpanded,
+                        enter = fadeIn() + expandVertically(),
+                        exit = fadeOut() + shrinkVertically()
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(top = 8.dp, bottom = 16.dp)
+                        ) {
+                            TileGrid(group.tiles, viewModel)
+                        }
+                    }
                 }
             }
+        }
+    }
+}
+
+@Composable
+fun TileGrid(tiles: List<SavingsTile>, viewModel: SavingsViewModel) {
+    val rows = tiles.chunked(5)
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        rows.forEach { rowTiles ->
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                rowTiles.forEach { tile ->
+                    Box(modifier = Modifier.weight(1f)) {
+                        SavingsTileItem(tile) {
+                            viewModel.toggleTile(tile.id)
+                        }
+                    }
+                }
+                // Fill empty slots in the last row if needed
+                if (rowTiles.size < 5) {
+                    repeat(5 - rowTiles.size) {
+                        Spacer(modifier = Modifier.weight(1f))
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun MilestoneAccordionHeader(
+    name: String,
+    isExpanded: Boolean,
+    onClick: () -> Unit
+) {
+    val rotation by animateFloatAsState(
+        targetValue = if (isExpanded) 180f else 0f,
+        label = "rotation"
+    )
+
+    Surface(
+        onClick = onClick,
+        color = PrimaryCard,
+        shape = RoundedCornerShape(16.dp),
+        modifier = Modifier.fillMaxWidth()
+    ) {
+        Row(
+            modifier = Modifier
+                .padding(horizontal = 20.dp, vertical = 16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            Text(
+                text = name,
+                style = MaterialTheme.typography.labelLarge,
+                color = if (isExpanded) SoftGold else SecondaryText,
+                fontWeight = FontWeight.SemiBold,
+                letterSpacing = 0.5.sp
+            )
+            
+            Icon(
+                imageVector = Icons.Default.KeyboardArrowDown,
+                contentDescription = if (isExpanded) "Collapse" else "Expand",
+                tint = if (isExpanded) SoftGold else SecondaryText,
+                modifier = Modifier.rotate(rotation)
+            )
         }
     }
 }
@@ -172,7 +259,7 @@ fun SavingsTileItem(tile: SavingsTile, onClick: () -> Unit) {
     )
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (tile.isCompleted) SuccessGreen else PrimaryCard,
+        targetValue = if (tile.isCompleted) SuccessGreen else ElevatedCard,
         animationSpec = spring(), label = "color"
     )
     
