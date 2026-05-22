@@ -18,14 +18,14 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.monevo.app.ui.components.MonevoBottomNavigation
 import com.monevo.app.ui.screens.HomeScreen
-import com.monevo.app.ui.screens.InsightsScreen
 import com.monevo.app.ui.screens.OnboardingScreen
 import com.monevo.app.ui.screens.ProgressScreen
+import com.monevo.app.ui.screens.SettingsScreen
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Outlined.Home)
     object Progress : Screen("progress", "Progress", Icons.Outlined.DateRange)
-    object Growth : Screen("growth", "Growth", Icons.AutoMirrored.Outlined.ShowChart)
+    object Settings : Screen("settings", "Settings", Icons.AutoMirrored.Outlined.ShowChart)
 }
 
 @Composable
@@ -39,7 +39,7 @@ fun MainScreen() {
         val items = listOf(
             Screen.Home,
             Screen.Progress,
-            Screen.Growth
+            Screen.Settings
         )
 
         Scaffold(
@@ -69,7 +69,7 @@ fun MainScreen() {
             ) {
                 composable(Screen.Home.route) { HomeScreen(viewModel) }
                 composable(Screen.Progress.route) { ProgressScreen(viewModel) }
-                composable(Screen.Growth.route) { InsightsScreen() }
+            composable(Screen.Settings.route) { SettingsScreen(viewModel) }
             }
         }
     }
