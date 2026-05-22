@@ -2,15 +2,16 @@ package com.monevo.app.ui.screens
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.*
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.monevo.app.ui.theme.*
+import com.monevo.app.ui.components.InsightItem
+import com.monevo.app.ui.theme.PrimaryText
 
 @Composable
 fun InsightsScreen() {
@@ -56,36 +57,5 @@ fun InsightsScreen() {
         )
         
         Spacer(modifier = Modifier.height(100.dp))
-    }
-}
-
-@Composable
-fun InsightItem(title: String, description: String, emoji: String) {
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = PrimaryCard),
-        shape = RoundedCornerShape(24.dp)
-    ) {
-        Row(
-            modifier = Modifier.padding(18.dp)
-        ) {
-            Text(text = emoji, style = MaterialTheme.typography.titleLarge)
-            Spacer(modifier = Modifier.width(16.dp))
-            Column {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.titleSmall,
-                    fontWeight = FontWeight.Bold,
-                    color = PrimaryText
-                )
-                Spacer(modifier = Modifier.height(4.dp))
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = SecondaryText,
-                    lineHeight = 16.sp
-                )
-            }
-        }
     }
 }
