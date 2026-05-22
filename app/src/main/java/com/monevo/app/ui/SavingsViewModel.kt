@@ -14,6 +14,7 @@ import com.monevo.app.model.SavingsTile
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.*
+import java.util.concurrent.TimeUnit
 import kotlin.random.Random
 
 class SavingsViewModel(application: Application) : AndroidViewModel(application) {
@@ -78,31 +79,61 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     val consistencyStats by derivedStateOf {
         val completedTiles = tiles.filter { it.isCompleted && it.completedAt != null }
+            .sortedBy { it.completedAt }
+            
         if (completedTiles.isEmpty()) return@derivedStateOf ConsistencyData(0, 0, 0)
         
         val calendar = Calendar.getInstance()
-        val weeklySavings = mutableMapOf<String, Int>()
-        completedTiles.forEach { tile ->
-            calendar.timeInMillis = tile.completedAt!!
-            val key = "${calendar.get(Calendar.YEAR)}:${calendar.get(Calendar.WEEK_OF_YEAR)}"
-            weeklySavings[key] = (weeklySavings[key] ?: 0) + tile.amount
-        }
         
-        val bestWeek = weeklySavings.values.maxOrNull() ?: 0
-        val avgWeekly = if (weeklySavings.isNotEmpty()) weeklySavings.values.average().toInt() else 0
+        // 1. Daily Streak
+        val completedDays = completedTiles.map {
+            calendar.timeInMillis = it.completedAt!!
+            calendar.set(Calendar.HOUR_OF_DAY, 0)
+            calendar.set(Calendar.MINUTE, 0)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+            calendar.timeInMillis
+        }.toSet()
         
         var streak = 0
         calendar.timeInMillis = System.currentTimeMillis()
-        var currentYear = calendar.get(Calendar.YEAR)
-        var currentWeek = calendar.get(Calendar.WEEK_OF_YEAR)
+        calendar.set(Calendar.HOUR_OF_DAY, 0)
+        calendar.set(Calendar.MINUTE, 0)
+        calendar.set(Calendar.SECOND, 0)
+        calendar.set(Calendar.MILLISECOND, 0)
         
-        while (weeklySavings.containsKey("$currentYear:$currentWeek")) {
-            streak++
-            calendar.add(Calendar.WEEK_OF_YEAR, -1)
-            currentYear = calendar.get(Calendar.YEAR)
-            currentWeek = calendar.get(Calendar.WEEK_OF_YEAR)
+        var checkDay = calendar.timeInMillis
+        
+        // Allow streak to continue if the last save was yesterday or today
+        if (!completedDays.contains(checkDay)) {
+            calendar.add(Calendar.DAY_OF_YEAR, -1)
+            checkDay = calendar.timeInMillis
         }
-        ConsistencyData(streak, bestWeek, avgWeekly)
+        
+        while (completedDays.contains(checkDay)) {
+            streak++
+            calendar.add(Calendar.DAY_OF_YEAR, -1)
+            checkDay = calendar.timeInMillis
+        }
+
+        // 2. Best Week (Rolling 7-day)
+        var bestWeek = 0
+        if (completedTiles.isNotEmpty()) {
+            completedTiles.forEach { startTile ->
+                val startTimestamp = startTile.completedAt!!
+                val endTimestamp = startTimestamp + TimeUnit.DAYS.toMillis(7)
+                val weekTotal = completedTiles.filter { 
+                    it.completedAt in startTimestamp until endTimestamp 
+                }.sumOf { it.amount }
+                if (weekTotal > bestWeek) bestWeek = weekTotal
+            }
+        }
+
+        // 3. Average Daily Saving
+        val uniqueActiveDays = completedDays.size
+        val avgDaily = if (uniqueActiveDays > 0) totalSaved / uniqueActiveDays else 0
+        
+        ConsistencyData(streak, bestWeek, avgDaily)
     }
 
     // --- DETERMINISTIC MILESTONE LOGIC ---
@@ -289,7 +320,7 @@ data class MilestoneGroup(
 data class ConsistencyData(
     val streak: Int,
     val bestWeek: Int,
-    val avgWeekly: Int
+    val avgDaily: Int
 )
 
 sealed class CelebrationType {

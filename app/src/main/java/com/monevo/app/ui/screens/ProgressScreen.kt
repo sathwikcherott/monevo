@@ -73,9 +73,9 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
         Spacer(modifier = Modifier.height(20.dp))
 
         ConsistencySection(
-            streakWeeks = consistency.streak,
+            streakDays = consistency.streak,
             bestWeekAmount = consistency.bestWeek,
-            avgWeeklyAmount = consistency.avgWeekly
+            avgDailyAmount = consistency.avgDaily
         )
         
         Spacer(modifier = Modifier.height(100.dp))
