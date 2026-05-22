@@ -1,12 +1,23 @@
 package com.monevo.app.ui.components
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.spring
+import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.scale
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.monevo.app.ui.Screen
+import com.monevo.app.ui.theme.AccentGold
 import com.monevo.app.ui.theme.Background
+import com.monevo.app.ui.theme.ElevatedCard
 import com.monevo.app.ui.theme.SecondaryText
 
 @Composable
@@ -17,20 +28,58 @@ fun MonevoBottomNavigation(
 ) {
     NavigationBar(
         containerColor = Background,
-        tonalElevation = 0.dp
+        tonalElevation = 0.dp,
+        modifier = Modifier
+            .height(84.dp) // Refined height for better vertical balance
+            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         screens.forEach { screen ->
+            val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
+            
+            // Interaction: Soft scale for active icon
+            val iconScale by animateFloatAsState(
+                targetValue = if (isSelected) 1.1f else 1.0f,
+                animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+                label = "iconScale"
+            )
+
+            // Interaction: Subtle opacity for labels
+            val labelAlpha by animateFloatAsState(
+                targetValue = if (isSelected) 1f else 0.6f,
+                animationSpec = spring(),
+                label = "labelAlpha"
+            )
+
             NavigationBarItem(
-                icon = { Icon(screen.icon, contentDescription = null) },
-                label = { Text(screen.label) },
-                selected = currentDestination?.hierarchy?.any { it.route == screen.route } == true,
+                icon = { 
+                    Icon(
+                        imageVector = screen.icon, 
+                        contentDescription = null,
+                        modifier = Modifier
+                            .size(22.dp) // Optically balanced size
+                            .scale(iconScale)
+                    ) 
+                },
+                label = { 
+                    Text(
+                        text = screen.label,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 11.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                            letterSpacing = 0.5.sp
+                        ),
+                        modifier = Modifier.alpha(labelAlpha)
+                    ) 
+                },
+                selected = isSelected,
                 onClick = { onNavigate(screen) },
+                alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = MaterialTheme.colorScheme.primary,
-                    selectedTextColor = MaterialTheme.colorScheme.primary,
-                    unselectedIconColor = SecondaryText,
-                    unselectedTextColor = SecondaryText,
-                    indicatorColor = Background
+                    selectedIconColor = AccentGold,
+                    selectedTextColor = AccentGold,
+                    unselectedIconColor = SecondaryText.copy(alpha = 0.5f),
+                    unselectedTextColor = SecondaryText.copy(alpha = 0.5f),
+                    indicatorColor = ElevatedCard.copy(alpha = 0.4f) // Soft tonal shift for active state
                 )
             )
         }
