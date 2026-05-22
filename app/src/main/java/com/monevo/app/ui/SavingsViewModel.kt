@@ -3,7 +3,6 @@ package com.monevo.app.ui
 import android.app.Application
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -27,9 +26,6 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         addAll(generateTiles(goalAmount))
     }
 
-    // Single source of truth for progression pacing (offset ahead of current progress)
-    private var unlockedMilestoneOffset by mutableIntStateOf(1)
-    var showUnlockDialog by mutableStateOf(false)
     var isOnboardingCompleted by mutableStateOf(true)
 
     val totalSaved by derivedStateOf {
@@ -38,6 +34,12 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     val progress by derivedStateOf {
         totalSaved.toFloat() / goalAmount
+    }
+
+    // --- PURE CALCULATION LOGIC ---
+
+    private fun calculateUnlockedGroups(totalSaved: Int, milestoneStep: Int = 5000): Int {
+        return (totalSaved / milestoneStep) + 1
     }
 
     // --- REAL ACTIVITY DATA LOGIC ---
@@ -99,13 +101,14 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         ConsistencyData(streak, bestWeek, avgWeekly)
     }
 
-    // --- MILESTONE LOGIC ---
+    // --- DETERMINISTIC MILESTONE LOGIC ---
 
     val groupedTiles by derivedStateOf {
         val groups = mutableListOf<MilestoneGroup>()
         var currentGroupTiles = mutableListOf<SavingsTile>()
         var currentGroupSum = 0
         var groupStartValue = 0
+        var groupId = 0
 
         tiles.forEach { tile ->
             currentGroupTiles.add(tile)
@@ -114,8 +117,11 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             if (currentGroupSum >= milestoneStep && groupStartValue + milestoneStep <= goalAmount) {
                 groups.add(
                     MilestoneGroup(
-                        name = "₹${groupStartValue / 1000}K → ₹${(groupStartValue + milestoneStep) / 1000}K",
-                        tiles = currentGroupTiles
+                        id = groupId++,
+                        rangeStart = groupStartValue,
+                        rangeEnd = groupStartValue + milestoneStep,
+                        tiles = currentGroupTiles,
+                        isLocked = false // Placeholder, will update below
                     )
                 )
                 groupStartValue += milestoneStep
@@ -125,25 +131,28 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         }
         
         if (currentGroupTiles.isNotEmpty()) {
-            groups.add(MilestoneGroup(name = "Final Milestone", tiles = currentGroupTiles))
+            groups.add(
+                MilestoneGroup(
+                    id = groupId++,
+                    rangeStart = groupStartValue,
+                    rangeEnd = goalAmount,
+                    tiles = currentGroupTiles,
+                    isLocked = false
+                )
+            )
         }
 
-    // SINGLE SOURCE OF TRUTH LOCKING LOGIC
-    // Base progression: (totalSaved / 5000) + 1
-    // At ₹0: (0 / 5000) + 1 = 1. index > 1 is locked (0, 1 unlocked)
-    val unlockedMilestones = (totalSaved / milestoneStep) + unlockedMilestoneOffset
-    groups.mapIndexed { index, group ->
-        group.copy(isLocked = index > unlockedMilestones)
+        val unlockedCount = calculateUnlockedGroups(totalSaved, milestoneStep)
+        groups.mapIndexed { index, group ->
+            group.copy(isLocked = index >= unlockedCount)
+        }
     }
-}
 
     init {
         viewModelScope.launch {
             val savedTilesData = dataStore.completedTilesData.first()
-            val savedUnlockedOffset = dataStore.unlockedMilestoneCount.first() // Using same key for now
             val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
             
-            unlockedMilestoneOffset = savedUnlockedOffset.coerceIn(1, 2)
             isOnboardingCompleted = savedOnboardingStatus
             
             savedTilesData.forEach { (id, timestamp) ->
@@ -165,23 +174,8 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                 isCompleted = nowCompleted,
                 completedAt = if (nowCompleted) System.currentTimeMillis() else null
             )
-            
-            if (nowCompleted) {
-                // If the group we just potentially finished is the "edge" of current visibility
-                val completedMilestonesCount = totalSaved / milestoneStep
-                val visibilityLimit = completedMilestonesCount + unlockedMilestoneOffset
-                if (visibilityLimit < groupedTiles.size && groupedTiles[visibilityLimit - 1].isCompleted) {
-                    showUnlockDialog = true
-                }
-            }
             saveState()
         }
-    }
-
-    fun unlockMilestones(count: Int) {
-        unlockedMilestoneOffset = count
-        showUnlockDialog = false
-        saveState()
     }
 
     fun completeOnboarding() {
@@ -191,12 +185,25 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         }
     }
 
+    fun replayOnboarding() {
+        isOnboardingCompleted = false
+    }
+
+    fun resetProgress() {
+        viewModelScope.launch {
+            dataStore.clearAll()
+            tiles.forEachIndexed { index, tile ->
+                tiles[index] = tile.copy(isCompleted = false, completedAt = null)
+            }
+        }
+    }
+
     private fun saveState() {
         viewModelScope.launch {
             val completedData = tiles
                 .filter { it.isCompleted && it.completedAt != null }
                 .associate { it.id to it.completedAt!! }
-            dataStore.saveProgress(completedData, unlockedMilestoneOffset)
+            dataStore.saveProgress(completedData)
         }
     }
 
@@ -223,10 +230,16 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 }
 
 data class MilestoneGroup(
-    val name: String,
+    val id: Int,
+    val rangeStart: Int,
+    val rangeEnd: Int,
     val tiles: List<SavingsTile>,
-    val isLocked: Boolean = false
+    val isLocked: Boolean
 ) {
+    val name: String
+        get() = if (rangeEnd == MonevoConfig.DEFAULT_SAVINGS_GOAL && rangeStart > 40000) "Final Milestone" 
+                else "₹${rangeStart / 1000}K → ₹${rangeEnd / 1000}K"
+
     val isCompleted: Boolean
         get() = tiles.all { it.isCompleted }
 }

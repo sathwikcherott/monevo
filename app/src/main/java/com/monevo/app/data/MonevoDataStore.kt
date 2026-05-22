@@ -5,7 +5,6 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
@@ -18,13 +17,10 @@ class MonevoDataStore(private val context: Context) {
     companion object {
         // Format: "id:timestamp"
         private val COMPLETED_TILES_DATA_KEY = stringSetPreferencesKey("completed_tiles_data")
-        private val UNLOCKED_MILESTONES_KEY = intPreferencesKey("unlocked_milestones")
         private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
+        private val SHOWN_CELEBRATIONS_KEY = stringSetPreferencesKey("shown_celebrations")
     }
 
-    /**
-     * Returns a map of Tile ID to Completion Timestamp
-     */
     val completedTilesData: Flow<Map<Int, Long>> = context.dataStore.data.map { preferences ->
         preferences[COMPLETED_TILES_DATA_KEY]?.mapNotNull { entry ->
             val parts = entry.split(":")
@@ -36,24 +32,36 @@ class MonevoDataStore(private val context: Context) {
         }?.toMap() ?: emptyMap()
     }
 
-    val unlockedMilestoneCount: Flow<Int> = context.dataStore.data.map { preferences ->
-        preferences[UNLOCKED_MILESTONES_KEY] ?: 1
-    }
-
     val isOnboardingCompleted: Flow<Boolean> = context.dataStore.data.map { preferences ->
         preferences[ONBOARDING_COMPLETED_KEY] ?: false
     }
 
-    suspend fun saveProgress(completedData: Map<Int, Long>, unlockedCount: Int) {
+    val shownCelebrationIds: Flow<Set<String>> = context.dataStore.data.map { preferences ->
+        preferences[SHOWN_CELEBRATIONS_KEY] ?: emptySet()
+    }
+
+    suspend fun saveProgress(completedData: Map<Int, Long>) {
         context.dataStore.edit { preferences ->
             preferences[COMPLETED_TILES_DATA_KEY] = completedData.map { "${it.key}:${it.value}" }.toSet()
-            preferences[UNLOCKED_MILESTONES_KEY] = unlockedCount
+        }
+    }
+
+    suspend fun markCelebrationShown(milestoneId: String) {
+        context.dataStore.edit { preferences ->
+            val current = preferences[SHOWN_CELEBRATIONS_KEY] ?: emptySet()
+            preferences[SHOWN_CELEBRATIONS_KEY] = current + milestoneId
         }
     }
 
     suspend fun saveOnboardingCompleted() {
         context.dataStore.edit { preferences ->
             preferences[ONBOARDING_COMPLETED_KEY] = true
+        }
+    }
+
+    suspend fun clearAll() {
+        context.dataStore.edit { preferences ->
+            preferences.remove(COMPLETED_TILES_DATA_KEY)
         }
     }
 }

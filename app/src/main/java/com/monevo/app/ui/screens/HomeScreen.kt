@@ -25,15 +25,6 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     val groupedTiles = viewModel.groupedTiles
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
 
-    // Isolate Dialog visibility check
-    Box {
-        if (viewModel.showUnlockDialog) {
-            ProgressionChoiceDialog(
-                onChoiceSelected = { count -> viewModel.unlockMilestones(count) }
-            )
-        }
-    }
-
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -65,12 +56,12 @@ fun HomeScreen(viewModel: SavingsViewModel) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp) // More breathing room between milestones
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             groupedTiles.forEachIndexed { index, group ->
                 val isExpanded = expandedSectionIndex == index && !group.isLocked
                 
-                item(key = "header_${group.name}") {
+                item(key = "header_${group.id}") {
                     MilestoneAccordionHeader(
                         name = group.name,
                         isExpanded = isExpanded,
@@ -83,7 +74,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                     )
                 }
                 
-                item(key = "content_${group.name}") {
+                item(key = "content_${group.id}") {
                     AnimatedVisibility(
                         visible = isExpanded,
                         enter = fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) + 

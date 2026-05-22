@@ -80,8 +80,15 @@ fun SettingsScreen(viewModel: SavingsViewModel) {
         
         // 4. Data Section
         SettingsSection(title = "Data & Continuity") {
-            SettingsActionOption(label = "Replay Onboarding")
-            SettingsActionOption(label = "Reset Progress", isDangerous = true)
+            SettingsActionOption(
+                label = "Replay Onboarding",
+                onClick = { viewModel.replayOnboarding() }
+            )
+            SettingsActionOption(
+                label = "Reset Progress", 
+                isDangerous = true,
+                onClick = { viewModel.resetProgress() }
+            )
         }
         
         Spacer(modifier = Modifier.height(40.dp))
@@ -316,11 +323,11 @@ fun MonevoToggle(checked: Boolean) {
 }
 
 @Composable
-fun SettingsActionOption(label: String, isDangerous: Boolean = false) {
+fun SettingsActionOption(label: String, isDangerous: Boolean = false, onClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { /* Future Logic */ }
+            .clickable { onClick() }
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.SpaceBetween
