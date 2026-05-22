@@ -68,8 +68,21 @@ fun MainScreen() {
                 modifier = Modifier.padding(innerPadding)
             ) {
                 composable(Screen.Home.route) { HomeScreen(viewModel) }
-                composable(Screen.Progress.route) { ProgressScreen(viewModel) }
-            composable(Screen.Settings.route) { SettingsScreen(viewModel) }
+                composable(Screen.Progress.route) { 
+                    ProgressScreen(
+                        viewModel = viewModel,
+                        onNavigateHome = {
+                            navController.navigate(Screen.Home.route) {
+                                popUpTo(navController.graph.findStartDestination().id) {
+                                    saveState = true
+                                }
+                                launchSingleTop = true
+                                restoreState = true
+                            }
+                        }
+                    ) 
+                }
+                composable(Screen.Settings.route) { SettingsScreen(viewModel) }
             }
         }
     }

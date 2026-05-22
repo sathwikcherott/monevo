@@ -15,15 +15,18 @@ import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.PrimaryText
 
 @Composable
-fun ProgressScreen(viewModel: SavingsViewModel) {
+fun ProgressScreen(
+    viewModel: SavingsViewModel,
+    onNavigateHome: () -> Unit
+) {
     val consistency = viewModel.consistencyStats
-    
+    val isFreshStart = viewModel.totalSaved == 0
+
     Column(
         modifier = Modifier
             .fillMaxSize()
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
-            .verticalScroll(rememberScrollState())
     ) {
         Spacer(modifier = Modifier.height(24.dp))
         
@@ -35,49 +38,59 @@ fun ProgressScreen(viewModel: SavingsViewModel) {
             letterSpacing = (-0.5).sp
         )
         
-        Spacer(modifier = Modifier.height(16.dp))
-        
-        CircularProgressSection(
-            progress = viewModel.progress,
-            totalSaved = viewModel.totalSaved
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            AnalyticsCard(
-                title = "Remaining",
-                value = "₹%,d".format(viewModel.goalAmount - viewModel.totalSaved),
-                isHighlighted = false,
-                modifier = Modifier.weight(1.1f)
-            )
-            AnalyticsCard(
-                title = "Completed",
-                value = "${viewModel.tiles.count { it.isCompleted }} tiles",
-                isHighlighted = true,
-                modifier = Modifier.weight(0.9f)
-            )
+        if (isFreshStart) {
+            FreshStartView(onBeginSaving = onNavigateHome)
+        } else {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .verticalScroll(rememberScrollState())
+            ) {
+                Spacer(modifier = Modifier.height(16.dp))
+                
+                CircularProgressSection(
+                    progress = viewModel.progress,
+                    totalSaved = viewModel.totalSaved
+                )
+                
+                Spacer(modifier = Modifier.height(24.dp))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    AnalyticsCard(
+                        title = "Remaining",
+                        value = "₹%,d".format(viewModel.goalAmount - viewModel.totalSaved),
+                        isHighlighted = false,
+                        modifier = Modifier.weight(1.1f)
+                    )
+                    AnalyticsCard(
+                        title = "Completed",
+                        value = "${viewModel.tiles.count { it.isCompleted }} tiles",
+                        isHighlighted = true,
+                        modifier = Modifier.weight(0.9f)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(20.dp))
+                
+                TrendChart(heights = viewModel.weeklyMomentum)
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                MilestonesProgress(totalSaved = viewModel.totalSaved)
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                ConsistencySection(
+                    streakDays = consistency.streak,
+                    bestWeekAmount = consistency.bestWeek,
+                    avgDailyAmount = consistency.avgDaily
+                )
+                
+                Spacer(modifier = Modifier.height(100.dp))
+            }
         }
-        
-        Spacer(modifier = Modifier.height(20.dp))
-        
-        TrendChart(heights = viewModel.weeklyMomentum)
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        MilestonesProgress(totalSaved = viewModel.totalSaved)
-
-        Spacer(modifier = Modifier.height(20.dp))
-
-        ConsistencySection(
-            streakDays = consistency.streak,
-            bestWeekAmount = consistency.bestWeek,
-            avgDailyAmount = consistency.avgDaily
-        )
-        
-        Spacer(modifier = Modifier.height(100.dp))
     }
 }
