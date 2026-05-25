@@ -20,6 +20,8 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.monevo.app.ui.components.MonevoBottomNavigation
+import com.monevo.app.ui.components.ReconfiguringOverlay
+import com.monevo.app.ui.motion.ProvideMotionSettings
 import com.monevo.app.ui.screens.HomeScreen
 import com.monevo.app.ui.screens.OnboardingScreen
 import com.monevo.app.ui.screens.ProgressScreen
@@ -36,50 +38,30 @@ fun MainScreen() {
     val navController = rememberNavController()
     val viewModel: SavingsViewModel = viewModel()
     
-    if (!viewModel.isOnboardingCompleted) {
-        DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
-            OnboardingScreen(onFinish = { viewModel.completeOnboarding() })
-        }
-    } else {
-        val items = listOf(
-            Screen.Home,
-            Screen.Progress,
-            Screen.Profile
-        )
-
-        Box {
+    ProvideMotionSettings(isReducedMotionEnabled = viewModel.isReducedMotionEnabled) {
+        if (!viewModel.isOnboardingCompleted) {
             DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
-                Scaffold(
-                    bottomBar = {
-                        val navBackStackEntry by navController.currentBackStackEntryAsState()
-                        val currentDestination = navBackStackEntry?.destination
-                        
-                        MonevoBottomNavigation(
-                            screens = items,
-                            currentDestination = currentDestination,
-                            onNavigate = { screen ->
-                                navController.navigate(screen.route) {
-                                    popUpTo(navController.graph.findStartDestination().id) {
-                                        saveState = true
-                                    }
-                                    launchSingleTop = true
-                                    restoreState = true
-                                }
-                            }
-                        )
-                    }
-                ) { innerPadding ->
-                    NavHost(
-                        navController = navController,
-                        startDestination = Screen.Home.route,
-                        modifier = Modifier.padding(innerPadding)
-                    ) {
-                        composable(Screen.Home.route) { HomeScreen(viewModel) }
-                        composable(Screen.Progress.route) { 
-                            ProgressScreen(
-                                viewModel = viewModel,
-                                onNavigateHome = {
-                                    navController.navigate(Screen.Home.route) {
+                OnboardingScreen(onFinish = { viewModel.completeOnboarding() })
+            }
+        } else {
+            val items = listOf(
+                Screen.Home,
+                Screen.Progress,
+                Screen.Profile
+            )
+
+            Box {
+                DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
+                    Scaffold(
+                        bottomBar = {
+                            val navBackStackEntry by navController.currentBackStackEntryAsState()
+                            val currentDestination = navBackStackEntry?.destination
+                            
+                            MonevoBottomNavigation(
+                                screens = items,
+                                currentDestination = currentDestination,
+                                onNavigate = { screen ->
+                                    navController.navigate(screen.route) {
                                         popUpTo(navController.graph.findStartDestination().id) {
                                             saveState = true
                                         }
@@ -87,15 +69,40 @@ fun MainScreen() {
                                         restoreState = true
                                     }
                                 }
-                            ) 
+                            )
                         }
-                        composable(Screen.Profile.route) { ProfileScreen(viewModel) }
+                    ) { innerPadding ->
+                        NavHost(
+                            navController = navController,
+                            startDestination = Screen.Home.route,
+                            modifier = Modifier.padding(innerPadding)
+                        ) {
+                            composable(Screen.Home.route) { HomeScreen(viewModel) }
+                            composable(Screen.Progress.route) { 
+                                ProgressScreen(
+                                    viewModel = viewModel,
+                                    onNavigateHome = {
+                                        navController.navigate(Screen.Home.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                ) 
+                            }
+                            composable(Screen.Profile.route) { ProfileScreen(viewModel) }
+                        }
                     }
                 }
-            }
 
-            // [DEBUG] Milestone progression tester - REMOVE FOR PRODUCTION
-            DebugMilestoneOverlay(viewModel)
+                // [DEBUG] Milestone progression tester - REMOVE FOR PRODUCTION
+                DebugMilestoneOverlay(viewModel)
+
+                // Goal reconfiguration overlay
+                ReconfiguringOverlay(isVisible = viewModel.isReconfiguring)
+            }
         }
     }
 }

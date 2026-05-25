@@ -28,10 +28,12 @@ import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.PrimaryText
 import com.monevo.app.debug.DebugHapticController
+import com.monevo.app.ui.motion.LocalMotionSettings
 import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(viewModel: SavingsViewModel) {
+    val motionSettings = LocalMotionSettings.current
     val groupedTiles = viewModel.groupedTiles
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
     var showConfetti by remember { mutableStateOf(false) }
@@ -56,21 +58,22 @@ fun HomeScreen(viewModel: SavingsViewModel) {
         
         if (celebration is CelebrationType.FinalGoal) {
             // 1. Completion Pause / Recognition Moment
-            delay(400)
+            delay(motionSettings.scaleDuration(400, 1.5f).toLong())
             
             // 2. Premium Haptic Feedback
             if (viewModel.isHapticsEnabled) {
+                val duration = motionSettings.scaleDuration(200, 0.6f).toLong()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+                    vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
                 } else {
-                    vibrator.vibrate(200)
+                    vibrator.vibrate(duration)
                 }
                 DebugHapticController.onHapticExecuted(true)
             }
             
             // 3. Progress Completion Pulse
             showRecognitionGlow = true
-            delay(800)
+            delay(motionSettings.scaleDuration(800).toLong())
             showRecognitionGlow = false
             
             // 4. Delayed Confetti Trigger (Always release)
@@ -80,16 +83,17 @@ fun HomeScreen(viewModel: SavingsViewModel) {
             pulsingMilestoneId = groupId
 
             if (viewModel.isHapticsEnabled) {
-                delay(if (viewModel.isReducedMotionEnabled) 100L else 200L)
+                delay(motionSettings.scaleValue(200f, 100f).toLong())
+                val duration = motionSettings.scaleDuration(100, 0.6f).toLong()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                    vibrator.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
                 } else {
-                    vibrator.vibrate(100)
+                    vibrator.vibrate(duration)
                 }
                 DebugHapticController.onHapticExecuted(true)
             }
             
-            delay(1200)
+            delay(motionSettings.scaleDuration(1200).toLong())
             pulsingMilestoneId = null
         }
         

@@ -23,6 +23,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.model.SavingsTile
+import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
 @Composable
@@ -34,19 +35,23 @@ fun MilestoneAccordionHeader(
     modifier: Modifier = Modifier,
     isGlowActive: Boolean = false
 ) {
+    val motionSettings = LocalMotionSettings.current
     val haptic = LocalHapticFeedback.current
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
         animationSpec = tween(
-            durationMillis = 400,
+            durationMillis = motionSettings.scaleDuration(400),
             easing = FastOutSlowInEasing
         ),
         label = "rotation"
     )
 
     val glowAlpha by animateFloatAsState(
-        targetValue = if (isGlowActive) 0.5f else 0f,
-        animationSpec = tween(600, easing = FastOutSlowInEasing),
+        targetValue = if (isGlowActive) motionSettings.scaleValue(0.5f, 0.2f) else 0f,
+        animationSpec = tween(
+            durationMillis = motionSettings.scaleDuration(600), 
+            easing = FastOutSlowInEasing
+        ),
         label = "glowAlpha"
     )
 
@@ -63,7 +68,7 @@ fun MilestoneAccordionHeader(
             .fillMaxWidth()
             .alpha(if (isLocked) 0.6f else 1f)
             .shadow(
-                elevation = if (isGlowActive) 16.dp else 0.dp,
+                elevation = if (isGlowActive) motionSettings.scaleDp(16.dp, 4.dp) else 0.dp,
                 shape = RoundedCornerShape(16.dp),
                 spotColor = AccentGold.copy(alpha = glowAlpha)
             )

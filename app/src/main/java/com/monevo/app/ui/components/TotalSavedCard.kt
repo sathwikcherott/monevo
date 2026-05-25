@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
 @Composable
@@ -25,6 +26,7 @@ fun TotalSavedCard(
     modifier: Modifier = Modifier,
     isGlowActive: Boolean = false
 ) {
+    val motionSettings = LocalMotionSettings.current
     val progressValue = progressProvider()
     val isCompleted = progressValue >= 1f
 
@@ -32,9 +34,12 @@ fun TotalSavedCard(
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val breathingScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = if (isCompleted) 1.02f else 1f,
+        targetValue = if (isCompleted) motionSettings.scaleValue(1.02f, 1.005f) else 1f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = FastOutSlowInEasing),
+            animation = tween(
+                durationMillis = motionSettings.scaleDuration(2000), 
+                easing = FastOutSlowInEasing
+            ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
@@ -42,14 +47,17 @@ fun TotalSavedCard(
 
     // Cinematic one-time pulse/glow scale
     val recognitionScale by animateFloatAsState(
-        targetValue = if (isGlowActive) 1.04f else 1f,
-        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+        targetValue = if (isGlowActive) motionSettings.scaleValue(1.04f, 1.01f) else 1f,
+        animationSpec = motionSettings.gentleSpring(),
         label = "recognitionScale"
     )
 
     val glowAlpha by animateFloatAsState(
-        targetValue = if (isGlowActive) 0.4f else 0f,
-        animationSpec = tween(500, easing = FastOutSlowInEasing),
+        targetValue = if (isGlowActive) motionSettings.scaleValue(0.4f, 0.15f) else 0f,
+        animationSpec = tween(
+            durationMillis = motionSettings.scaleDuration(500), 
+            easing = FastOutSlowInEasing
+        ),
         label = "glowAlpha"
     )
 
@@ -61,7 +69,7 @@ fun TotalSavedCard(
                 scaleY = if (isGlowActive) recognitionScale else breathingScale
             }
             .shadow(
-                elevation = if (isGlowActive) 20.dp else 0.dp,
+                elevation = if (isGlowActive) motionSettings.scaleDp(20.dp, 4.dp) else 0.dp,
                 shape = RoundedCornerShape(24.dp),
                 spotColor = AccentGold.copy(alpha = glowAlpha)
             ),

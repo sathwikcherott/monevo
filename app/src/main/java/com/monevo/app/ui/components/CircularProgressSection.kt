@@ -14,6 +14,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
 @Composable
@@ -23,12 +24,16 @@ fun CircularProgressSection(
     modifier: Modifier = Modifier,
     isMomentumActive: Boolean = false,
 ) {
+    val motionSettings = LocalMotionSettings.current
     val infiniteTransition = rememberInfiniteTransition(label = "ringGlow")
     val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = 0.04f,
-        targetValue = if (isMomentumActive) 0.12f else 0.04f,
+        targetValue = if (isMomentumActive) motionSettings.scaleValue(0.12f, 0.06f) else 0.04f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2500, easing = EaseInOutSine),
+            animation = tween(
+                durationMillis = motionSettings.scaleDuration(2500), 
+                easing = EaseInOutSine
+            ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseAlpha"

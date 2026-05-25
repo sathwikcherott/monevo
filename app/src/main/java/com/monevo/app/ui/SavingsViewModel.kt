@@ -32,6 +32,9 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     var isHapticsEnabled by mutableStateOf(true)
     var isReducedMotionEnabled by mutableStateOf(false)
 
+    var isReconfiguring by mutableStateOf(false)
+        private set
+
     private val shownCelebrationIds = mutableSetOf<String>()
     var activeCelebration by mutableStateOf<CelebrationType?>(null)
         private set
@@ -219,16 +222,24 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         if (newGoal == goalAmount || newGoal <= 0) return
         
         viewModelScope.launch {
+            isReconfiguring = true
             val currentSaved = totalSaved
+            
+            // Save to DataStore
             dataStore.saveGoalAmount(newGoal)
+            
+            // Cinematic delay for recalibration orchestration
+            // This allows the user to register the transition and see the progress bar
+            kotlinx.coroutines.delay(2000)
+            
             goalAmount = newGoal
             
-            // Regenerate tiles
+            // Regenerate tiles based on new goal
             val newTiles = generateTiles(newGoal)
             tiles.clear()
             tiles.addAll(newTiles)
             
-            // Restore progress
+            // Restore progress as closely as possible
             var restoredAmount = 0
             tiles.forEachIndexed { index, tile ->
                 if (restoredAmount + tile.amount <= currentSaved) {
@@ -236,7 +247,9 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                     restoredAmount += tile.amount
                 }
             }
+            
             saveState()
+            isReconfiguring = false
         }
     }
 

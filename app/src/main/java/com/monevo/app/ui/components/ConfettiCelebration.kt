@@ -9,6 +9,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.withTransform
+import com.monevo.app.ui.motion.LocalMotionSettings
 import kotlin.random.Random
 
 /**
@@ -35,16 +36,20 @@ fun PremiumConfettiOverlay(
     durationMillis: Long = 4000L,
     onAnimationEnd: () -> Unit = {}
 ) {
+    val motionSettings = LocalMotionSettings.current
+    val effectiveDuration = motionSettings.scaleDuration(durationMillis.toInt()).toLong()
+    val particleCount = if (motionSettings.isReducedMotionEnabled) 40 else 100
+    
     val particles = remember {
-        List(100) {
+        List(particleCount) {
             ConfettiParticle(
                 x = Random.nextFloat(),
                 y = -0.05f, // Start just above screen
                 size = Random.nextFloat() * 10f + 6f,
                 color = listOf(ConfettiGold, ConfettiSoftGold, ConfettiMutedPink, ConfettiWhite).random(),
-                speedY = Random.nextFloat() * 0.0003f + 0.0002f, // Slower for premium feel
-                speedX = (Random.nextFloat() - 0.5f) * 0.0001f,
-                rotationSpeed = Random.nextFloat() * 2f + 1f,
+                speedY = Random.nextFloat() * motionSettings.scaleValue(0.0003f, 0.00015f) + 0.0002f, 
+                speedX = (Random.nextFloat() - 0.5f) * motionSettings.scaleValue(0.0001f, 0.00005f),
+                rotationSpeed = Random.nextFloat() * motionSettings.scaleValue(2f, 0.5f) + 1f,
                 delay = Random.nextInt(0, 1500)
             )
         }
@@ -55,7 +60,7 @@ fun PremiumConfettiOverlay(
     LaunchedEffect(Unit) {
         progress.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis.toInt(), easing = LinearOutSlowInEasing)
+            animationSpec = tween(effectiveDuration.toInt(), easing = LinearOutSlowInEasing)
         )
         onAnimationEnd()
     }
@@ -67,17 +72,18 @@ fun PremiumConfettiOverlay(
 
         particles.forEach { p ->
             // Calculate current time in animation for this particle
-            val currentTime = t * durationMillis
+            val currentTime = t * effectiveDuration
             val particleElapsed = currentTime - p.delay
 
             if (particleElapsed <= 0) return@forEach
 
             // Normalize particle progress
-            val pProgress = particleElapsed / (durationMillis - p.delay)
+            val pProgress = particleElapsed / (effectiveDuration - p.delay)
             if (pProgress >= 1f) return@forEach
 
             val currentY = (p.y + p.speedY * particleElapsed) * height
-            val currentX = (p.x + p.speedX * particleElapsed + Math.sin(particleElapsed.toDouble() * 0.005).toFloat() * 0.02f) * width
+            val swing = if (motionSettings.isReducedMotionEnabled) 0.002f else 0.005f
+            val currentX = (p.x + p.speedX * particleElapsed + Math.sin(particleElapsed.toDouble() * swing).toFloat() * 0.02f) * width
             val rotation = p.rotationSpeed * particleElapsed * 0.1f
 
             // Elegant fade out
