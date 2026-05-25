@@ -17,6 +17,8 @@ class MonevoDataStore(private val context: Context) {
         private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
         private val SHOWN_CELEBRATIONS_KEY = stringSetPreferencesKey("shown_celebrations")
         private val GOAL_AMOUNT_KEY = intPreferencesKey("goal_amount")
+        private val HAPTICS_ENABLED_KEY = booleanPreferencesKey("haptics_enabled")
+        private val REDUCED_MOTION_KEY = booleanPreferencesKey("reduced_motion")
     }
 
     val completedTilesData: Flow<Map<Int, Long>> = context.dataStore.data.map { preferences ->
@@ -40,6 +42,14 @@ class MonevoDataStore(private val context: Context) {
 
     val goalAmount: Flow<Int?> = context.dataStore.data.map { preferences ->
         preferences[GOAL_AMOUNT_KEY]
+    }
+
+    val hapticsEnabled: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[HAPTICS_ENABLED_KEY] ?: true
+    }
+
+    val reducedMotion: Flow<Boolean> = context.dataStore.data.map { preferences ->
+        preferences[REDUCED_MOTION_KEY] ?: false
     }
 
     suspend fun saveProgress(completedData: Map<Int, Long>) {
@@ -67,12 +77,26 @@ class MonevoDataStore(private val context: Context) {
         }
     }
 
+    suspend fun saveHapticsEnabled(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[HAPTICS_ENABLED_KEY] = enabled
+        }
+    }
+
+    suspend fun saveReducedMotion(enabled: Boolean) {
+        context.dataStore.edit { preferences ->
+            preferences[REDUCED_MOTION_KEY] = enabled
+        }
+    }
+
     suspend fun clearAll() {
         context.dataStore.edit { preferences ->
             preferences.remove(COMPLETED_TILES_DATA_KEY)
             preferences.remove(ONBOARDING_COMPLETED_KEY)
             preferences.remove(SHOWN_CELEBRATIONS_KEY)
             preferences.remove(GOAL_AMOUNT_KEY)
+            preferences.remove(HAPTICS_ENABLED_KEY)
+            preferences.remove(REDUCED_MOTION_KEY)
         }
     }
 }

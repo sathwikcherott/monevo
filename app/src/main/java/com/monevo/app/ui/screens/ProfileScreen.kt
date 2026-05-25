@@ -81,12 +81,14 @@ fun ProfileScreen(viewModel: SavingsViewModel) {
             ProfileToggleOption(
                 label = "Tactile Haptics",
                 description = "Subtle touch feedback",
-                initialValue = true
+                initialValue = viewModel.isHapticsEnabled,
+                onCheckedChange = { viewModel.updateHapticsEnabled(it) }
             )
             ProfileToggleOption(
                 label = "Reduced Motion",
                 description = "Softer UI transitions",
-                initialValue = false
+                initialValue = viewModel.isReducedMotionEnabled,
+                onCheckedChange = { viewModel.updateReducedMotion(it) }
             )
         }
         
@@ -307,8 +309,12 @@ fun GoalPresetsRow(viewModel: SavingsViewModel) {
 }
 
 @Composable
-fun ProfileToggleOption(label: String, description: String, initialValue: Boolean) {
-    var checked by remember { mutableStateOf(initialValue) }
+fun ProfileToggleOption(
+    label: String, 
+    description: String, 
+    initialValue: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
     val haptic = LocalHapticFeedback.current
 
     Row(
@@ -316,7 +322,7 @@ fun ProfileToggleOption(label: String, description: String, initialValue: Boolea
             .fillMaxWidth()
             .clickable { 
                 haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                checked = !checked 
+                onCheckedChange(!initialValue)
             }
             .padding(horizontal = 20.dp, vertical = 16.dp),
         verticalAlignment = Alignment.CenterVertically,
@@ -336,7 +342,7 @@ fun ProfileToggleOption(label: String, description: String, initialValue: Boolea
             )
         }
         
-        MonevoToggle(checked = checked)
+        MonevoToggle(checked = initialValue)
     }
 }
 

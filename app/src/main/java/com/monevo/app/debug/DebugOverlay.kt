@@ -34,7 +34,6 @@ import kotlin.math.roundToInt
 fun DebugMilestoneOverlay(viewModel: SavingsViewModel) {
     var isExpanded by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
-    val haptic = LocalHapticFeedback.current
     
     // Floating position state
     var offsetX by remember { mutableStateOf(0f) }
@@ -157,18 +156,23 @@ fun DebugMilestoneOverlay(viewModel: SavingsViewModel) {
                         Text("Near Complete", color = Color.White, fontSize = 11.sp)
                     }
 
-                    // Haptic Test Control
+                    // Haptic Viz Toggle
                     Button(
                         onClick = { 
-                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                            DebugHapticController.triggerVisualHaptic()
+                            DebugHapticController.isVizModeEnabled = !DebugHapticController.isVizModeEnabled
                         },
-                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.5f)),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = if (DebugHapticController.isVizModeEnabled) Color(0xFFC5A059) else Color.Gray.copy(alpha = 0.5f)
+                        ),
                         contentPadding = PaddingValues(horizontal = 12.dp),
                         modifier = Modifier.fillMaxWidth().height(34.dp),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Test Haptics", color = Color.White, fontSize = 11.sp)
+                        Text(
+                            text = if (DebugHapticController.isVizModeEnabled) "Haptic Viz: ON" else "Haptic Viz: OFF",
+                            color = if (DebugHapticController.isVizModeEnabled) Color.Black else Color.White,
+                            fontSize = 11.sp
+                        )
                     }
 
                     // Reset Control

@@ -16,6 +16,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -30,7 +31,8 @@ fun MilestoneAccordionHeader(
     isExpanded: Boolean,
     isLocked: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isGlowActive: Boolean = false
 ) {
     val haptic = LocalHapticFeedback.current
     val rotation by animateFloatAsState(
@@ -40,6 +42,12 @@ fun MilestoneAccordionHeader(
             easing = FastOutSlowInEasing
         ),
         label = "rotation"
+    )
+
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isGlowActive) 0.5f else 0f,
+        animationSpec = tween(600, easing = FastOutSlowInEasing),
+        label = "glowAlpha"
     )
 
     Surface(
@@ -54,6 +62,11 @@ fun MilestoneAccordionHeader(
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (isLocked) 0.6f else 1f)
+            .shadow(
+                elevation = if (isGlowActive) 16.dp else 0.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = AccentGold.copy(alpha = glowAlpha)
+            )
     ) {
         Row(
             modifier = Modifier

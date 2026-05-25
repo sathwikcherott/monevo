@@ -12,8 +12,13 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
+import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -22,6 +27,7 @@ import com.monevo.app.ui.CelebrationType
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.PrimaryText
+import com.monevo.app.debug.DebugHapticController
 import kotlinx.coroutines.delay
 
 @Composable
@@ -30,25 +36,65 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
     var showConfetti by remember { mutableStateOf(false) }
     var showRecognitionGlow by remember { mutableStateOf(false) }
-    val haptic = LocalHapticFeedback.current
+    var pulsingMilestoneId by remember { mutableStateOf<Int?>(null) }
+    var celebrationTrigger by remember { mutableStateOf<CelebrationType?>(null) }
+
+    val context = LocalContext.current
+    val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
+
+    // Synchronize trigger state with ViewModel
+    LaunchedEffect(viewModel.activeCelebration) {
+        if (viewModel.activeCelebration != null) {
+            celebrationTrigger = viewModel.activeCelebration
+        }
+    }
 
     // Trigger sequenced celebration for final goal
-    LaunchedEffect(viewModel.activeCelebration) {
-        if (viewModel.activeCelebration is CelebrationType.FinalGoal) {
+    // Uses a separate state to ensure the sequence finishes even if the dialog is dismissed early
+    LaunchedEffect(celebrationTrigger) {
+        val celebration = celebrationTrigger ?: return@LaunchedEffect
+        
+        if (celebration is CelebrationType.FinalGoal) {
             // 1. Completion Pause / Recognition Moment
             delay(400)
             
-            // 2. Haptic Feedback
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            // 2. Premium Haptic Feedback
+            if (viewModel.isHapticsEnabled) {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    vibrator.vibrate(200)
+                }
+                DebugHapticController.onHapticExecuted(true)
+            }
             
             // 3. Progress Completion Pulse
             showRecognitionGlow = true
-            delay(800) // Pulse duration
+            delay(800)
             showRecognitionGlow = false
             
-            // 4. Delayed Confetti Trigger
+            // 4. Delayed Confetti Trigger (Always release)
             showConfetti = true
+        } else if (celebration is CelebrationType.MilestoneReached) {
+            val groupId = viewModel.groupedTiles.find { it.rangeEnd == celebration.amount }?.id
+            pulsingMilestoneId = groupId
+
+            if (viewModel.isHapticsEnabled) {
+                delay(if (viewModel.isReducedMotionEnabled) 100L else 200L)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator.vibrate(VibrationEffect.createOneShot(100, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    vibrator.vibrate(100)
+                }
+                DebugHapticController.onHapticExecuted(true)
+            }
+            
+            delay(1200)
+            pulsingMilestoneId = null
         }
+        
+        // Reset local trigger
+        celebrationTrigger = null
     }
 
     // Celebration Dialog
@@ -102,6 +148,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                             name = group.name,
                             isExpanded = isExpanded,
                             isLocked = group.isLocked,
+                            isGlowActive = pulsingMilestoneId == group.id,
                             onClick = {
                                 if (!group.isLocked) {
                                     expandedSectionIndex = if (isExpanded) -1 else index

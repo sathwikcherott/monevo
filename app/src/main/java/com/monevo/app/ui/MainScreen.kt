@@ -2,6 +2,7 @@ package com.monevo.app.ui
 
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import com.monevo.app.debug.DebugHapticInterceptor
 import com.monevo.app.debug.DebugMilestoneOverlay
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Person
@@ -36,7 +37,9 @@ fun MainScreen() {
     val viewModel: SavingsViewModel = viewModel()
     
     if (!viewModel.isOnboardingCompleted) {
-        OnboardingScreen(onFinish = { viewModel.completeOnboarding() })
+        DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
+            OnboardingScreen(onFinish = { viewModel.completeOnboarding() })
+        }
     } else {
         val items = listOf(
             Screen.Home,
@@ -45,37 +48,17 @@ fun MainScreen() {
         )
 
         Box {
-            Scaffold(
-                bottomBar = {
-                    val navBackStackEntry by navController.currentBackStackEntryAsState()
-                    val currentDestination = navBackStackEntry?.destination
-                    
-                    MonevoBottomNavigation(
-                        screens = items,
-                        currentDestination = currentDestination,
-                        onNavigate = { screen ->
-                            navController.navigate(screen.route) {
-                                popUpTo(navController.graph.findStartDestination().id) {
-                                    saveState = true
-                                }
-                                launchSingleTop = true
-                                restoreState = true
-                            }
-                        }
-                    )
-                }
-            ) { innerPadding ->
-                NavHost(
-                    navController = navController,
-                    startDestination = Screen.Home.route,
-                    modifier = Modifier.padding(innerPadding)
-                ) {
-                    composable(Screen.Home.route) { HomeScreen(viewModel) }
-                    composable(Screen.Progress.route) { 
-                        ProgressScreen(
-                            viewModel = viewModel,
-                            onNavigateHome = {
-                                navController.navigate(Screen.Home.route) {
+            DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
+                Scaffold(
+                    bottomBar = {
+                        val navBackStackEntry by navController.currentBackStackEntryAsState()
+                        val currentDestination = navBackStackEntry?.destination
+                        
+                        MonevoBottomNavigation(
+                            screens = items,
+                            currentDestination = currentDestination,
+                            onNavigate = { screen ->
+                                navController.navigate(screen.route) {
                                     popUpTo(navController.graph.findStartDestination().id) {
                                         saveState = true
                                     }
@@ -83,9 +66,31 @@ fun MainScreen() {
                                     restoreState = true
                                 }
                             }
-                        ) 
+                        )
                     }
-                    composable(Screen.Profile.route) { ProfileScreen(viewModel) }
+                ) { innerPadding ->
+                    NavHost(
+                        navController = navController,
+                        startDestination = Screen.Home.route,
+                        modifier = Modifier.padding(innerPadding)
+                    ) {
+                        composable(Screen.Home.route) { HomeScreen(viewModel) }
+                        composable(Screen.Progress.route) { 
+                            ProgressScreen(
+                                viewModel = viewModel,
+                                onNavigateHome = {
+                                    navController.navigate(Screen.Home.route) {
+                                        popUpTo(navController.graph.findStartDestination().id) {
+                                            saveState = true
+                                        }
+                                        launchSingleTop = true
+                                        restoreState = true
+                                    }
+                                }
+                            ) 
+                        }
+                        composable(Screen.Profile.route) { ProfileScreen(viewModel) }
+                    }
                 }
             }
 

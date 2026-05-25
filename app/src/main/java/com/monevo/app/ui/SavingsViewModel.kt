@@ -29,6 +29,9 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     var isOnboardingCompleted by mutableStateOf(true)
 
+    var isHapticsEnabled by mutableStateOf(true)
+    var isReducedMotionEnabled by mutableStateOf(false)
+
     private val shownCelebrationIds = mutableSetOf<String>()
     var activeCelebration by mutableStateOf<CelebrationType?>(null)
         private set
@@ -195,9 +198,13 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             val savedTilesData = dataStore.completedTilesData.first()
             val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
             val savedCelebrations = dataStore.shownCelebrationIds.first()
+            val savedHaptics = dataStore.hapticsEnabled.first()
+            val savedReducedMotion = dataStore.reducedMotion.first()
             
             isOnboardingCompleted = savedOnboardingStatus
             shownCelebrationIds.addAll(savedCelebrations)
+            isHapticsEnabled = savedHaptics
+            isReducedMotionEnabled = savedReducedMotion
             
             savedTilesData.forEach { (id, timestamp) ->
                 val index = tiles.indexOfFirst { it.id == id }
@@ -292,6 +299,16 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     fun replayOnboarding() {
         isOnboardingCompleted = false
+    }
+
+    fun updateHapticsEnabled(enabled: Boolean) {
+        isHapticsEnabled = enabled
+        viewModelScope.launch { dataStore.saveHapticsEnabled(enabled) }
+    }
+
+    fun updateReducedMotion(enabled: Boolean) {
+        isReducedMotionEnabled = enabled
+        viewModelScope.launch { dataStore.saveReducedMotion(enabled) }
     }
 
     fun resetProgress() {
