@@ -28,7 +28,19 @@ import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.theme.*
 
 @Composable
-fun SettingsScreen(viewModel: SavingsViewModel) {
+fun ProfileScreen(viewModel: SavingsViewModel) {
+    var showResetDialog by remember { mutableStateOf(false) }
+
+    if (showResetDialog) {
+        MonevoResetDialog(
+            onConfirm = {
+                viewModel.resetProgress()
+                showResetDialog = false
+            },
+            onDismiss = { showResetDialog = false }
+        )
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -39,7 +51,7 @@ fun SettingsScreen(viewModel: SavingsViewModel) {
         Spacer(modifier = Modifier.height(24.dp))
         
         Text(
-            text = "Settings",
+            text = "Profile",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
             color = PrimaryText,
@@ -49,7 +61,7 @@ fun SettingsScreen(viewModel: SavingsViewModel) {
         Spacer(modifier = Modifier.height(24.dp))
         
         // 1. Hero / Profile Section
-        SettingsHeroCard(
+        ProfileHeroCard(
             totalSaved = viewModel.totalSaved,
             goalAmount = viewModel.goalAmount,
             progress = viewModel.progress
@@ -58,20 +70,20 @@ fun SettingsScreen(viewModel: SavingsViewModel) {
         Spacer(modifier = Modifier.height(32.dp))
         
         // 2. Savings Goal Section
-        SettingsSection(title = "Savings Goal") {
+        ProfileSection(title = "Savings Goal") {
             GoalPresetsRow(currentGoal = viewModel.goalAmount)
         }
         
         Spacer(modifier = Modifier.height(24.dp))
         
         // 3. Experience Section
-        SettingsSection(title = "Experience") {
-            SettingsToggleOption(
+        ProfileSection(title = "Experience") {
+            ProfileToggleOption(
                 label = "Tactile Haptics",
                 description = "Subtle touch feedback",
                 initialValue = true
             )
-            SettingsToggleOption(
+            ProfileToggleOption(
                 label = "Reduced Motion",
                 description = "Softer UI transitions",
                 initialValue = false
@@ -81,15 +93,15 @@ fun SettingsScreen(viewModel: SavingsViewModel) {
         Spacer(modifier = Modifier.height(24.dp))
         
         // 4. Data Section
-        SettingsSection(title = "Data & Continuity") {
-            SettingsActionOption(
+        ProfileSection(title = "Data & Continuity") {
+            ProfileActionOption(
                 label = "Replay Onboarding",
                 onClick = { viewModel.replayOnboarding() }
             )
-            SettingsActionOption(
+            ProfileActionOption(
                 label = "Reset Progress", 
                 isDangerous = true,
-                onClick = { viewModel.resetProgress() }
+                onClick = { showResetDialog = true }
             )
         }
         
@@ -117,7 +129,7 @@ fun SettingsScreen(viewModel: SavingsViewModel) {
 }
 
 @Composable
-fun SettingsHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
+fun ProfileHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
     val isCompleted = progress >= 1f
 
     // Dynamic state based on granular progress stages
@@ -240,7 +252,7 @@ fun SettingsHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
 }
 
 @Composable
-fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
+fun ProfileSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Column {
         Text(
             text = title,
@@ -294,7 +306,7 @@ fun GoalPresetsRow(currentGoal: Int) {
 }
 
 @Composable
-fun SettingsToggleOption(label: String, description: String, initialValue: Boolean) {
+fun ProfileToggleOption(label: String, description: String, initialValue: Boolean) {
     var checked by remember { mutableStateOf(initialValue) }
     val haptic = LocalHapticFeedback.current
 
@@ -365,7 +377,7 @@ fun MonevoToggle(checked: Boolean) {
 }
 
 @Composable
-fun SettingsActionOption(label: String, isDangerous: Boolean = false, onClick: () -> Unit = {}) {
+fun ProfileActionOption(label: String, isDangerous: Boolean = false, onClick: () -> Unit = {}) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -387,4 +399,96 @@ fun SettingsActionOption(label: String, isDangerous: Boolean = false, onClick: (
             modifier = Modifier.size(20.dp)
         )
     }
+}
+
+@Composable
+fun MonevoResetDialog(
+    onConfirm: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = {
+            Text(
+                text = "Reset Your Savings Journey?",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryText
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                Text(
+                    text = "This will permanently clear your current savings progress, milestones, and completion history from this device.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = SecondaryText,
+                    lineHeight = 22.sp
+                )
+
+                // Warning Box
+                Surface(
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.08f),
+                    shape = RoundedCornerShape(16.dp),
+                    border = androidx.compose.foundation.BorderStroke(
+                        1.dp, 
+                        MaterialTheme.colorScheme.error.copy(alpha = 0.15f)
+                    )
+                ) {
+                    Column(modifier = Modifier.padding(16.dp)) {
+                        Text(
+                            text = "Important",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.9f)
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "All progress tied to this journey will be removed locally. Make sure you truly want to begin again from the start.",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.error.copy(alpha = 0.8f),
+                            lineHeight = 18.sp
+                        )
+                    }
+                }
+
+                Text(
+                    text = "This action cannot be undone.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onConfirm,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = MaterialTheme.colorScheme.error.copy(alpha = 0.2f),
+                    contentColor = MaterialTheme.colorScheme.error
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Text(
+                    text = "Reset Progress",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(
+                onClick = onDismiss
+            ) {
+                Text(
+                    text = "Cancel",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = SecondaryText,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        },
+        containerColor = PrimaryCard,
+        shape = RoundedCornerShape(28.dp),
+        tonalElevation = 8.dp
+    )
 }

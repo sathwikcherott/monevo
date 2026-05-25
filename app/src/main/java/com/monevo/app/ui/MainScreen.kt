@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import com.monevo.app.debug.DebugMilestoneOverlay
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ShowChart
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Scaffold
@@ -22,12 +22,12 @@ import com.monevo.app.ui.components.MonevoBottomNavigation
 import com.monevo.app.ui.screens.HomeScreen
 import com.monevo.app.ui.screens.OnboardingScreen
 import com.monevo.app.ui.screens.ProgressScreen
-import com.monevo.app.ui.screens.SettingsScreen
+import com.monevo.app.ui.screens.ProfileScreen
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Outlined.Home)
     object Progress : Screen("progress", "Progress", Icons.Outlined.DateRange)
-    object Settings : Screen("settings", "Settings", Icons.AutoMirrored.Outlined.ShowChart)
+    object Profile : Screen("profile", "Profile", Icons.Outlined.Person)
 }
 
 @Composable
@@ -41,7 +41,7 @@ fun MainScreen() {
         val items = listOf(
             Screen.Home,
             Screen.Progress,
-            Screen.Settings
+            Screen.Profile
         )
 
         Box {
@@ -85,7 +85,7 @@ fun MainScreen() {
                             }
                         ) 
                     }
-                    composable(Screen.Settings.route) { SettingsScreen(viewModel) }
+                    composable(Screen.Profile.route) { ProfileScreen(viewModel) }
                 }
             }
 
