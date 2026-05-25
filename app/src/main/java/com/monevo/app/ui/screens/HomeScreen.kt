@@ -1,8 +1,7 @@
 package com.monevo.app.ui.screens
 
 import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -17,6 +16,8 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -109,12 +110,22 @@ fun HomeScreen(viewModel: SavingsViewModel) {
         )
     }
 
+    val contentAlpha by animateFloatAsState(
+        targetValue = if (viewModel.isReconfiguring) 0f else 1f,
+        animationSpec = tween(
+            durationMillis = motionSettings.scaleDuration(600), 
+            easing = FastOutSlowInEasing
+        ),
+        label = "contentAlpha"
+    )
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .statusBarsPadding()
                 .padding(horizontal = 20.dp)
+                .graphicsLayer { alpha = contentAlpha }
         ) {
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -134,7 +145,8 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 completedCountProvider = { viewModel.tiles.count { it.isCompleted } },
                 totalCountProvider = { viewModel.tiles.size },
                 goalProvider = { viewModel.goalAmount },
-                isGlowActive = showRecognitionGlow
+                isGlowActive = showRecognitionGlow,
+                atmosphere = viewModel.atmosphere
             )
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -153,6 +165,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                             isExpanded = isExpanded,
                             isLocked = group.isLocked,
                             isGlowActive = pulsingMilestoneId == group.id,
+                            atmosphere = viewModel.atmosphere,
                             onClick = {
                                 if (!group.isLocked) {
                                     expandedSectionIndex = if (isExpanded) -1 else index

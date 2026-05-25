@@ -3,6 +3,7 @@ package com.monevo.app.ui
 import android.app.Application
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -11,6 +12,7 @@ import androidx.lifecycle.viewModelScope
 import com.monevo.app.config.MonevoConfig
 import com.monevo.app.data.MonevoDataStore
 import com.monevo.app.model.SavingsTile
+import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.*
@@ -34,6 +36,8 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     var isReconfiguring by mutableStateOf(false)
         private set
+    var reconfiguringGoal by mutableIntStateOf(0)
+        private set
 
     private val shownCelebrationIds = mutableSetOf<String>()
     var activeCelebration by mutableStateOf<CelebrationType?>(null)
@@ -45,6 +49,10 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     val progress by derivedStateOf {
         if (goalAmount > 0) totalSaved.toFloat() / goalAmount else 0f
+    }
+
+    val atmosphere by derivedStateOf {
+        JourneyAtmosphere.fromProgress(progress)
     }
 
     // --- PURE CALCULATION LOGIC ---
@@ -223,6 +231,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         
         viewModelScope.launch {
             isReconfiguring = true
+            reconfiguringGoal = newGoal
             val currentSaved = totalSaved
             
             // Save to DataStore

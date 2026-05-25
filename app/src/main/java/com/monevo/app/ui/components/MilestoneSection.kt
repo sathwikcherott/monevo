@@ -23,6 +23,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.model.SavingsTile
+import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import com.monevo.app.ui.atmosphere.getAdaptiveGold
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -33,10 +35,13 @@ fun MilestoneAccordionHeader(
     isLocked: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    isGlowActive: Boolean = false
+    isGlowActive: Boolean = false,
+    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
     val motionSettings = LocalMotionSettings.current
     val haptic = LocalHapticFeedback.current
+    val adaptiveGold = atmosphere.getAdaptiveGold()
+
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
         animationSpec = tween(
@@ -92,7 +97,7 @@ fun MilestoneAccordionHeader(
                 Text(
                     text = name,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (isExpanded) SoftGold else if (isLocked) SecondaryText else PrimaryText,
+                    color = if (isExpanded) adaptiveGold else if (isLocked) SecondaryText else PrimaryText,
                     fontWeight = FontWeight.SemiBold,
                     letterSpacing = 0.5.sp
                 )
@@ -102,7 +107,7 @@ fun MilestoneAccordionHeader(
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = if (isExpanded) SoftGold else SecondaryText,
+                    tint = if (isExpanded) adaptiveGold else SecondaryText,
                     modifier = Modifier.rotate(rotation)
                 )
             }

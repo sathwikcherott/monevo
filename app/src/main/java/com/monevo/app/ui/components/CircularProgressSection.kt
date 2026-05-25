@@ -14,6 +14,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import com.monevo.app.ui.atmosphere.getAdaptiveGold
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -23,12 +25,19 @@ fun CircularProgressSection(
     totalSaved: Int,
     modifier: Modifier = Modifier,
     isMomentumActive: Boolean = false,
+    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
     val motionSettings = LocalMotionSettings.current
+    val adaptiveGold = atmosphere.getAdaptiveGold()
+    
     val infiniteTransition = rememberInfiniteTransition(label = "ringGlow")
     val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = 0.04f,
-        targetValue = if (isMomentumActive) motionSettings.scaleValue(0.12f, 0.06f) else 0.04f,
+        targetValue = if (isMomentumActive) {
+            motionSettings.scaleValue(0.12f, 0.06f) * atmosphere.glowIntensity
+        } else {
+            0.04f * atmosphere.glowIntensity
+        },
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = motionSettings.scaleDuration(2500), 
@@ -61,7 +70,7 @@ fun CircularProgressSection(
             
             // Highly diffused ambient glow (blended into active arc)
             drawArc(
-                color = AccentGold.copy(alpha = pulseAlpha),
+                color = adaptiveGold.copy(alpha = pulseAlpha),
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
@@ -69,7 +78,7 @@ fun CircularProgressSection(
             )
 
             drawArc(
-                color = AccentGold.copy(alpha = pulseAlpha * 2f),
+                color = adaptiveGold.copy(alpha = pulseAlpha * 2f),
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
@@ -78,7 +87,7 @@ fun CircularProgressSection(
             
             // Active Progress Arc - Sized precisely to match track visually
             drawArc(
-                color = AccentGold,
+                color = adaptiveGold,
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
@@ -112,7 +121,7 @@ fun CircularProgressSection(
                 text = "₹%,d saved".format(totalSaved),
                 style = MaterialTheme.typography.labelLarge,
                 fontWeight = FontWeight.SemiBold,
-                color = SoftGold
+                color = adaptiveGold
             )
         }
     }

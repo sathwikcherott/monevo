@@ -59,7 +59,8 @@ fun ProgressScreen(
                 CircularProgressSection(
                     progress = viewModel.progress,
                     totalSaved = totalSaved,
-                    isMomentumActive = isMomentumBuilding
+                    isMomentumActive = isMomentumBuilding,
+                    atmosphere = viewModel.atmosphere
                 )
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -72,12 +73,14 @@ fun ProgressScreen(
                         title = "Remaining",
                         value = "₹%,d".format(viewModel.goalAmount - viewModel.totalSaved),
                         isHighlighted = false,
+                        atmosphere = viewModel.atmosphere,
                         modifier = Modifier.weight(1.1f)
                     )
                     AnalyticsCard(
                         title = "Completed",
                         value = "${viewModel.tiles.count { it.isCompleted }} tiles",
                         isHighlighted = true,
+                        atmosphere = viewModel.atmosphere,
                         modifier = Modifier.weight(0.9f)
                     )
                 }
@@ -90,7 +93,8 @@ fun ProgressScreen(
 
                 MilestonesProgress(
                     totalSaved = viewModel.totalSaved,
-                    goalAmount = viewModel.goalAmount
+                    goalAmount = viewModel.goalAmount,
+                    atmosphere = viewModel.atmosphere
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))

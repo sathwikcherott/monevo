@@ -11,18 +11,23 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import com.monevo.app.ui.atmosphere.getAdaptiveGold
 import com.monevo.app.ui.theme.*
 
 @Composable
 fun MilestonesProgress(
     totalSaved: Int,
     goalAmount: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
+    val adaptiveGold = atmosphere.getAdaptiveGold()
     val milestones = remember(goalAmount) {
         val step = goalAmount / 5
         List(6) { index ->
@@ -66,7 +71,7 @@ fun MilestonesProgress(
                     Text(
                         text = "₹%,d left to ${currentTarget.label}".format(currentTarget.amount - totalSaved),
                         style = MaterialTheme.typography.labelSmall,
-                        color = SoftGold,
+                        color = adaptiveGold,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -86,7 +91,7 @@ fun MilestonesProgress(
                     val progressInCurrent = if (milestoneTotal > 0) savedInThisMilestone.toFloat() / milestoneTotal else 0f
                     val activeWidth = (segmentWidth * (targetIndex - 1).coerceAtLeast(0)) + (segmentWidth * progressInCurrent)
                     
-                    Box(modifier = Modifier.width(activeWidth).height(2.dp).background(AccentGold))
+                    Box(modifier = Modifier.width(activeWidth).height(2.dp).background(adaptiveGold))
                 }
 
                 Row(
@@ -101,7 +106,8 @@ fun MilestonesProgress(
                         MilestoneNode(
                             label = milestone.label,
                             isReached = isReached,
-                            isTarget = isTarget
+                            isTarget = isTarget,
+                            accentColor = adaptiveGold
                         )
                     }
                 }
@@ -120,13 +126,18 @@ fun MilestonesProgress(
 }
 
 @Composable
-private fun MilestoneNode(label: String, isReached: Boolean, isTarget: Boolean) {
+private fun MilestoneNode(
+    label: String, 
+    isReached: Boolean, 
+    isTarget: Boolean,
+    accentColor: Color = AccentGold
+) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         if (isTarget) {
             Box(
                 modifier = Modifier
                     .size(14.dp)
-                    .border(2.dp, AccentGold, CircleShape)
+                    .border(2.dp, accentColor, CircleShape)
                     .background(Background, CircleShape)
             )
         } else {
@@ -134,7 +145,7 @@ private fun MilestoneNode(label: String, isReached: Boolean, isTarget: Boolean) 
                 modifier = Modifier
                     .size(10.dp)
                     .clip(CircleShape)
-                    .background(if (isReached) AccentGold else SecondaryText.copy(alpha = 0.3f))
+                    .background(if (isReached) accentColor else SecondaryText.copy(alpha = 0.3f))
             )
         }
 

@@ -13,6 +13,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import com.monevo.app.ui.atmosphere.getAdaptiveGold
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -24,17 +26,24 @@ fun TotalSavedCard(
     totalCountProvider: () -> Int,
     goalProvider: () -> Int,
     modifier: Modifier = Modifier,
-    isGlowActive: Boolean = false
+    isGlowActive: Boolean = false,
+    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
     val motionSettings = LocalMotionSettings.current
     val progressValue = progressProvider()
     val isCompleted = progressValue >= 1f
 
+    // Atmosphere-aware values
+    val adaptiveGold = atmosphere.getAdaptiveGold()
+    val basePulseIntensity = motionSettings.scaleValue(1.02f, 1.005f)
+    // Scale breathing intensity with progress
+    val breathingTarget = 1f + (basePulseIntensity - 1f) * atmosphere.glowIntensity
+
     // Subtle pulse for completion
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val breathingScale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = if (isCompleted) motionSettings.scaleValue(1.02f, 1.005f) else 1f,
+        targetValue = if (isCompleted) basePulseIntensity else breathingTarget,
         animationSpec = infiniteRepeatable(
             animation = tween(
                 durationMillis = motionSettings.scaleDuration(2000), 
@@ -69,9 +78,9 @@ fun TotalSavedCard(
                 scaleY = if (isGlowActive) recognitionScale else breathingScale
             }
             .shadow(
-                elevation = if (isGlowActive) motionSettings.scaleDp(20.dp, 4.dp) else 0.dp,
+                elevation = if (isGlowActive || isCompleted) motionSettings.scaleDp(12.dp, 2.dp) else 0.dp,
                 shape = RoundedCornerShape(24.dp),
-                spotColor = AccentGold.copy(alpha = glowAlpha)
+                spotColor = adaptiveGold.copy(alpha = if (isCompleted) 0.2f else glowAlpha)
             ),
         colors = CardDefaults.cardColors(containerColor = PrimaryCard),
         shape = RoundedCornerShape(24.dp),
@@ -108,21 +117,20 @@ fun TotalSavedCard(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = SoftGold
+                        color = adaptiveGold
                     )
                 }
             }
             
             Spacer(modifier = Modifier.height(16.dp))
             
-            val progressValue = progressProvider()
             LinearProgressIndicator(
                 progress = { progressValue.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
                     .clip(RoundedCornerShape(3.dp)),
-                color = AccentGold,
+                color = adaptiveGold,
                 trackColor = ElevatedCard,
             )
             
@@ -137,7 +145,7 @@ fun TotalSavedCard(
                     text = "${(progressValue * 100).toInt()}% of goal",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = AccentGold
+                    color = adaptiveGold
                 )
                 Text(
                     text = "Goal: ₹%,d".format(goalProvider()),

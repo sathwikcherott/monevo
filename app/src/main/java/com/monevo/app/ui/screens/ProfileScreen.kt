@@ -25,6 +25,9 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.SavingsViewModel
+import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import com.monevo.app.ui.atmosphere.getAdaptiveGold
+import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
 @Composable
@@ -64,7 +67,8 @@ fun ProfileScreen(viewModel: SavingsViewModel) {
         ProfileHeroCard(
             totalSaved = viewModel.totalSaved,
             goalAmount = viewModel.goalAmount,
-            progress = viewModel.progress
+            progress = viewModel.progress,
+            atmosphere = viewModel.atmosphere
         )
         
         Spacer(modifier = Modifier.height(32.dp))
@@ -131,30 +135,38 @@ fun ProfileScreen(viewModel: SavingsViewModel) {
 }
 
 @Composable
-fun ProfileHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
+fun ProfileHeroCard(
+    totalSaved: Int, 
+    goalAmount: Int, 
+    progress: Float,
+    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
+) {
     val isCompleted = progress >= 1f
+    val motionSettings = LocalMotionSettings.current
 
-    // Dynamic state based on granular progress stages
-    val (title, subtitle) = when {
-        progress >= 1f -> "Journey Completed" to "₹%,d goal successfully achieved".format(goalAmount)
-        progress >= 0.95f -> "Final Stretch" to "One final push remains"
-        progress >= 0.90f -> "Almost Complete" to "Only a little remains"
-        progress >= 0.80f -> "Approaching the Finish" to "Your goal is now within reach"
-        progress >= 0.70f -> "Closing the Gap" to "The finish line is getting closer"
-        progress >= 0.60f -> "Momentum Established" to "Progress now feels intentional"
-        progress >= 0.50f -> "Strong Progress" to "Your journey is gaining strength"
-        progress >= 0.40f -> "Halfway There" to "You’ve already come a long way"
-        progress >= 0.30f -> "Finding Consistency" to "Discipline is becoming momentum"
-        progress >= 0.20f -> "Momentum Growing" to "Your savings rhythm is taking shape"
-        progress >= 0.15f -> "Building Momentum" to "Progress grows with every step"
-        progress >= 0.10f -> "Steady Start" to "Consistency is starting to build"
-        progress >= 0.05f -> "First Progress" to "Your momentum has begun"
-        progress > 0f -> "Getting Started" to "Small steps create lasting progress"
-        else -> "Ready to Begin" to "Your savings journey starts here"
+    // Granular title state based on progress
+    val title = when {
+        progress >= 1f -> "Journey Completed"
+        progress >= 0.95f -> "Final Stretch"
+        progress >= 0.90f -> "Almost Complete"
+        progress >= 0.80f -> "Approaching the Finish"
+        progress >= 0.70f -> "Closing the Gap"
+        progress >= 0.60f -> "Momentum Established"
+        progress >= 0.50f -> "Strong Progress"
+        progress >= 0.40f -> "Halfway There"
+        progress >= 0.30f -> "Finding Consistency"
+        progress >= 0.20f -> "Momentum Growing"
+        progress >= 0.15f -> "Building Momentum"
+        progress >= 0.10f -> "Steady Start"
+        progress >= 0.05f -> "First Progress"
+        progress > 0f -> "Getting Started"
+        else -> "Ready to Begin"
     }
 
-    // Dynamic accent intensity and subtle visual evolution
-    val accentAlpha = (0.6f + (progress * 0.4f)).coerceIn(0.6f, 1f)
+    // Atmospheric supporting message and visual evolution
+    val subtitle = atmosphere.supportingText
+    val adaptiveGold = atmosphere.getAdaptiveGold()
+    
     val elevation = when {
         progress >= 1f -> 12.dp
         progress >= 0.95f -> 6.dp
@@ -166,9 +178,9 @@ fun ProfileHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
         modifier = Modifier
             .fillMaxWidth()
             .shadow(
-                elevation = elevation,
+                elevation = motionSettings.scaleDp(elevation, if (elevation > 0.dp) 2.dp else 0.dp),
                 shape = RoundedCornerShape(28.dp),
-                spotColor = AccentGold.copy(alpha = if (progress >= 0.7f) 0.2f else 0f)
+                spotColor = adaptiveGold.copy(alpha = if (progress >= 0.7f) 0.2f else 0f)
             ),
         colors = CardDefaults.cardColors(containerColor = PrimaryCard),
         shape = RoundedCornerShape(28.dp)
@@ -182,7 +194,7 @@ fun ProfileHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.labelLarge,
-                    color = SoftGold.copy(alpha = accentAlpha),
+                    color = adaptiveGold.copy(alpha = (0.7f + (progress * 0.3f)).coerceIn(0.7f, 1f)),
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 0.5.sp
                 )
@@ -245,7 +257,7 @@ fun ProfileHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
                         .fillMaxWidth()
                         .height(6.dp)
                         .clip(RoundedCornerShape(3.dp)),
-                    color = if (isCompleted) AccentGold else SoftGold,
+                    color = if (isCompleted) AccentGold else adaptiveGold,
                     trackColor = ElevatedCard.copy(alpha = 0.4f),
                 )
             }

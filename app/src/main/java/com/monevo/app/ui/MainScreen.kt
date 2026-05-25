@@ -101,7 +101,10 @@ fun MainScreen() {
                 DebugMilestoneOverlay(viewModel)
 
                 // Goal reconfiguration overlay
-                ReconfiguringOverlay(isVisible = viewModel.isReconfiguring)
+                ReconfiguringOverlay(
+                    isVisible = viewModel.isReconfiguring,
+                    targetGoal = viewModel.reconfiguringGoal
+                )
             }
         }
     }
