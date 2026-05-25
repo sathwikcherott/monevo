@@ -1,6 +1,8 @@
 package com.monevo.app.ui
 
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
+import com.monevo.app.debug.DebugMilestoneOverlay
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ShowChart
 import androidx.compose.material.icons.outlined.DateRange
@@ -42,37 +44,17 @@ fun MainScreen() {
             Screen.Settings
         )
 
-        Scaffold(
-            bottomBar = {
-                val navBackStackEntry by navController.currentBackStackEntryAsState()
-                val currentDestination = navBackStackEntry?.destination
-                
-                MonevoBottomNavigation(
-                    screens = items,
-                    currentDestination = currentDestination,
-                    onNavigate = { screen ->
-                        navController.navigate(screen.route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    }
-                )
-            }
-        ) { innerPadding ->
-            NavHost(
-                navController = navController,
-                startDestination = Screen.Home.route,
-                modifier = Modifier.padding(innerPadding)
-            ) {
-                composable(Screen.Home.route) { HomeScreen(viewModel) }
-                composable(Screen.Progress.route) { 
-                    ProgressScreen(
-                        viewModel = viewModel,
-                        onNavigateHome = {
-                            navController.navigate(Screen.Home.route) {
+        Box {
+            Scaffold(
+                bottomBar = {
+                    val navBackStackEntry by navController.currentBackStackEntryAsState()
+                    val currentDestination = navBackStackEntry?.destination
+                    
+                    MonevoBottomNavigation(
+                        screens = items,
+                        currentDestination = currentDestination,
+                        onNavigate = { screen ->
+                            navController.navigate(screen.route) {
                                 popUpTo(navController.graph.findStartDestination().id) {
                                     saveState = true
                                 }
@@ -80,10 +62,35 @@ fun MainScreen() {
                                 restoreState = true
                             }
                         }
-                    ) 
+                    )
                 }
-                composable(Screen.Settings.route) { SettingsScreen(viewModel) }
+            ) { innerPadding ->
+                NavHost(
+                    navController = navController,
+                    startDestination = Screen.Home.route,
+                    modifier = Modifier.padding(innerPadding)
+                ) {
+                    composable(Screen.Home.route) { HomeScreen(viewModel) }
+                    composable(Screen.Progress.route) { 
+                        ProgressScreen(
+                            viewModel = viewModel,
+                            onNavigateHome = {
+                                navController.navigate(Screen.Home.route) {
+                                    popUpTo(navController.graph.findStartDestination().id) {
+                                        saveState = true
+                                    }
+                                    launchSingleTop = true
+                                    restoreState = true
+                                }
+                            }
+                        ) 
+                    }
+                    composable(Screen.Settings.route) { SettingsScreen(viewModel) }
+                }
             }
+
+            // [DEBUG] Milestone progression tester - REMOVE FOR PRODUCTION
+            DebugMilestoneOverlay(viewModel)
         }
     }
 }
