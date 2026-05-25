@@ -62,6 +62,8 @@ class MonevoDataStore(private val context: Context) {
     suspend fun clearAll() {
         context.dataStore.edit { preferences ->
             preferences.remove(COMPLETED_TILES_DATA_KEY)
+            preferences.remove(ONBOARDING_COMPLETED_KEY)
+            preferences.remove(SHOWN_CELEBRATIONS_KEY)
         }
     }
 }

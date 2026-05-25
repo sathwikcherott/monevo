@@ -12,11 +12,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ChevronRight
+import androidx.compose.material.icons.filled.Stars
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -116,20 +118,70 @@ fun SettingsScreen(viewModel: SavingsViewModel) {
 
 @Composable
 fun SettingsHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
-    val remainingAmount = (goalAmount - totalSaved).coerceAtLeast(0)
-    
+    val isCompleted = progress >= 1f
+
+    // Dynamic state based on granular progress stages
+    val (title, subtitle) = when {
+        progress >= 1f -> "Journey Completed" to "₹%,d goal successfully achieved".format(goalAmount)
+        progress >= 0.95f -> "Final Stretch" to "One final push remains"
+        progress >= 0.90f -> "Almost Complete" to "Only a little remains"
+        progress >= 0.80f -> "Approaching the Finish" to "Your goal is now within reach"
+        progress >= 0.70f -> "Closing the Gap" to "The finish line is getting closer"
+        progress >= 0.60f -> "Momentum Established" to "Progress now feels intentional"
+        progress >= 0.50f -> "Strong Progress" to "Your journey is gaining strength"
+        progress >= 0.40f -> "Halfway There" to "You’ve already come a long way"
+        progress >= 0.30f -> "Finding Consistency" to "Discipline is becoming momentum"
+        progress >= 0.20f -> "Momentum Growing" to "Your savings rhythm is taking shape"
+        progress >= 0.15f -> "Building Momentum" to "Progress grows with every step"
+        progress >= 0.10f -> "Steady Start" to "Consistency is starting to build"
+        progress >= 0.05f -> "First Progress" to "Your momentum has begun"
+        progress > 0f -> "Getting Started" to "Small steps create lasting progress"
+        else -> "Ready to Begin" to "Your savings journey starts here"
+    }
+
+    // Dynamic accent intensity and subtle visual evolution
+    val accentAlpha = (0.6f + (progress * 0.4f)).coerceIn(0.6f, 1f)
+    val elevation = when {
+        progress >= 1f -> 12.dp
+        progress >= 0.95f -> 6.dp
+        progress >= 0.70f -> 2.dp
+        else -> 0.dp
+    }
+
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(
+                elevation = elevation,
+                shape = RoundedCornerShape(28.dp),
+                spotColor = AccentGold.copy(alpha = if (progress >= 0.7f) 0.2f else 0f)
+            ),
         colors = CardDefaults.cardColors(containerColor = PrimaryCard),
         shape = RoundedCornerShape(28.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = "Your Journey",
-                style = MaterialTheme.typography.labelLarge,
-                color = SoftGold,
-                fontWeight = FontWeight.Bold
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.labelLarge,
+                    color = SoftGold.copy(alpha = accentAlpha),
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 0.5.sp
+                )
+
+                if (isCompleted) {
+                    Icon(
+                        imageVector = Icons.Default.Stars,
+                        contentDescription = null,
+                        tint = AccentGold,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+            }
             
             Spacer(modifier = Modifier.height(24.dp))
             
@@ -141,16 +193,16 @@ fun SettingsHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
                 Column {
                     Text(
                         text = "₹%,d".format(totalSaved),
-                        style = MaterialTheme.typography.headlineLarge, // Primary Focus
+                        style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryText,
                         letterSpacing = (-0.5).sp
                     )
                     Text(
-                        text = "of ₹%,d goal".format(goalAmount),
+                        text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
                         color = SecondaryText,
-                        modifier = Modifier.padding(top = 2.dp)
+                        modifier = Modifier.padding(top = 4.dp)
                     )
                 }
                 
@@ -177,20 +229,10 @@ fun SettingsHeroCard(totalSaved: Int, goalAmount: Int, progress: Float) {
                     progress = { progress.coerceIn(0f, 1f) },
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(4.dp)
-                        .clip(RoundedCornerShape(2.dp)),
-                    color = SoftGold.copy(alpha = 0.6f),
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = if (isCompleted) AccentGold else SoftGold,
                     trackColor = ElevatedCard.copy(alpha = 0.4f),
-                )
-                
-                Spacer(modifier = Modifier.height(12.dp))
-                
-                Text(
-                    text = "₹%,d left".format(remainingAmount),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = SecondaryText.copy(alpha = 0.7f),
-                    fontWeight = FontWeight.Medium,
-                    letterSpacing = 0.5.sp
                 )
             }
         }

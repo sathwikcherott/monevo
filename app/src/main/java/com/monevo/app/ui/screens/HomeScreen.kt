@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.monevo.app.ui.CelebrationType
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.PrimaryText
@@ -24,6 +25,14 @@ import com.monevo.app.ui.theme.PrimaryText
 fun HomeScreen(viewModel: SavingsViewModel) {
     val groupedTiles = viewModel.groupedTiles
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
+    var showConfetti by remember { mutableStateOf(false) }
+
+    // Trigger confetti for final goal
+    LaunchedEffect(viewModel.activeCelebration) {
+        if (viewModel.activeCelebration is CelebrationType.FinalGoal) {
+            showConfetti = true
+        }
+    }
 
     // Celebration Dialog
     viewModel.activeCelebration?.let { celebration ->
@@ -33,76 +42,84 @@ fun HomeScreen(viewModel: SavingsViewModel) {
         )
     }
 
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(horizontal = 20.dp)
-    ) {
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        Text(
-            text = "Monevo",
-            style = MaterialTheme.typography.headlineMedium,
-            fontWeight = FontWeight.Bold,
-            color = PrimaryText,
-            letterSpacing = (-0.5).sp
-        )
-        
-        Spacer(modifier = Modifier.height(20.dp))
-        
-        TotalSavedCard(
-            totalProvider = { viewModel.totalSaved },
-            progressProvider = { viewModel.progress },
-            completedCountProvider = { viewModel.tiles.count { it.isCompleted } },
-            totalCountProvider = { viewModel.tiles.size },
-            goalProvider = { viewModel.goalAmount }
-        )
-        
-        Spacer(modifier = Modifier.height(24.dp))
-        
-        LazyColumn(
-            modifier = Modifier.fillMaxSize(),
-            contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+    Box(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .padding(horizontal = 20.dp)
         ) {
-            groupedTiles.forEachIndexed { index, group ->
-                val isExpanded = expandedSectionIndex == index && !group.isLocked
-                
-                item(key = "header_${group.id}") {
-                    MilestoneAccordionHeader(
-                        name = group.name,
-                        isExpanded = isExpanded,
-                        isLocked = group.isLocked,
-                        onClick = {
-                            if (!group.isLocked) {
-                                expandedSectionIndex = if (isExpanded) -1 else index
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Text(
+                text = "Monevo",
+                style = MaterialTheme.typography.headlineMedium,
+                fontWeight = FontWeight.Bold,
+                color = PrimaryText,
+                letterSpacing = (-0.5).sp
+            )
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            TotalSavedCard(
+                totalProvider = { viewModel.totalSaved },
+                progressProvider = { viewModel.progress },
+                completedCountProvider = { viewModel.tiles.count { it.isCompleted } },
+                totalCountProvider = { viewModel.tiles.size },
+                goalProvider = { viewModel.goalAmount }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            LazyColumn(
+                modifier = Modifier.fillMaxSize(),
+                contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                groupedTiles.forEachIndexed { index, group ->
+                    val isExpanded = expandedSectionIndex == index && !group.isLocked
+
+                    item(key = "header_${group.id}") {
+                        MilestoneAccordionHeader(
+                            name = group.name,
+                            isExpanded = isExpanded,
+                            isLocked = group.isLocked,
+                            onClick = {
+                                if (!group.isLocked) {
+                                    expandedSectionIndex = if (isExpanded) -1 else index
+                                }
                             }
-                        }
-                    )
-                }
-                
-                item(key = "content_${group.id}") {
-                    AnimatedVisibility(
-                        visible = isExpanded,
-                        enter = fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) + 
-                                expandVertically(animationSpec = tween(400, easing = FastOutSlowInEasing)),
-                        exit = fadeOut(animationSpec = tween(400, easing = FastOutSlowInEasing)) + 
-                                shrinkVertically(animationSpec = tween(400, easing = FastOutSlowInEasing))
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 8.dp, bottom = 16.dp)
+                        )
+                    }
+
+                    item(key = "content_${group.id}") {
+                        AnimatedVisibility(
+                            visible = isExpanded,
+                            enter = fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) +
+                                    expandVertically(animationSpec = tween(400, easing = FastOutSlowInEasing)),
+                            exit = fadeOut(animationSpec = tween(400, easing = FastOutSlowInEasing)) +
+                                    shrinkVertically(animationSpec = tween(400, easing = FastOutSlowInEasing))
                         ) {
-                            TileGrid(
-                                tiles = group.tiles, 
-                                onTileClick = { viewModel.toggleTile(it) }
-                            )
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 8.dp, bottom = 16.dp)
+                            ) {
+                                TileGrid(
+                                    tiles = group.tiles,
+                                    onTileClick = { viewModel.toggleTile(it) }
+                                )
+                            }
                         }
                     }
                 }
             }
+        }
+
+        if (showConfetti) {
+            PremiumConfettiOverlay(
+                onAnimationEnd = { showConfetti = false }
+            )
         }
     }
 }

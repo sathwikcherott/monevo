@@ -268,6 +268,9 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             tiles.forEachIndexed { index, tile ->
                 tiles[index] = tile.copy(isCompleted = false, completedAt = null)
             }
+            isOnboardingCompleted = false
+            shownCelebrationIds.clear()
+            activeCelebration = null
         }
     }
 
