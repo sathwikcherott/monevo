@@ -78,7 +78,7 @@ Planned future improvements include:
 _Add screenshots here later._
 
 Example:
-
+BETA VERSION
 
 Home Screen<img width="1080" height="2340" alt="image" src="https://github.com/user-attachments/assets/8dc57a98-7969-4fde-b745-75df1f8007a4" />
 Progress Screen <img width="1080" height="2340" alt="image" src="https://github.com/user-attachments/assets/4b9fecd0-dce2-4b13-98c5-9e6cabaa4065" />
