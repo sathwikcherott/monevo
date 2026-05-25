@@ -1,5 +1,8 @@
 package com.monevo.app.ui
 
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import com.monevo.app.debug.DebugHapticInterceptor
@@ -75,7 +78,11 @@ fun MainScreen() {
                         NavHost(
                             navController = navController,
                             startDestination = Screen.Home.route,
-                            modifier = Modifier.padding(innerPadding)
+                            modifier = Modifier.padding(innerPadding),
+                            enterTransition = { fadeIn(animationSpec = tween(400)) },
+                            exitTransition = { fadeOut(animationSpec = tween(400)) },
+                            popEnterTransition = { fadeIn(animationSpec = tween(400)) },
+                            popExitTransition = { fadeOut(animationSpec = tween(400)) }
                         ) {
                             composable(Screen.Home.route) { HomeScreen(viewModel) }
                             composable(Screen.Progress.route) { 

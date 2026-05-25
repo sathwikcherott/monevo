@@ -27,7 +27,7 @@ fun AnalyticsCard(
         colors = CardDefaults.cardColors(
             containerColor = if (isHighlighted) ElevatedCard else PrimaryCard
         ),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
@@ -38,9 +38,9 @@ fun AnalyticsCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall,
-                color = SecondaryText,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.5.sp
+                color = SecondaryText.copy(alpha = 0.7f),
+                fontWeight = FontWeight.Bold,
+                letterSpacing = 1.sp
             )
             
             Spacer(modifier = Modifier.height(4.dp))
@@ -50,7 +50,7 @@ fun AnalyticsCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
                 color = if (isHighlighted) adaptiveGold else PrimaryText,
-                letterSpacing = 0.sp
+                letterSpacing = (-0.2).sp
             )
         }
     }

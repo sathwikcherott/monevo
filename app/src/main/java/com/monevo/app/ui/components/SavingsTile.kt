@@ -71,12 +71,12 @@ fun SavingsTileItem(
             }
             .aspectRatio(1.15f) // Slightly shorter for a cleaner dashboard chip feel
             .shadow(
-                elevation = if (tile.isCompleted) 4.dp else 0.dp, // Softer shadow
-                shape = RoundedCornerShape(12.dp),
-                spotColor = SuccessGreen.copy(alpha = 0.2f),
-                ambientColor = SuccessGreen.copy(alpha = 0.1f)
+                elevation = if (tile.isCompleted) 2.dp else 0.dp,
+                shape = RoundedCornerShape(16.dp),
+                spotColor = SuccessGreen.copy(alpha = 0.15f),
+                ambientColor = SuccessGreen.copy(alpha = 0.05f)
             )
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)
             .clickable(
                 interactionSource = interactionSource,

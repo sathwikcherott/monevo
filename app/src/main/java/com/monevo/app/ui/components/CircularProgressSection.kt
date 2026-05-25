@@ -34,13 +34,13 @@ fun CircularProgressSection(
     val pulseAlpha by infiniteTransition.animateFloat(
         initialValue = 0.04f,
         targetValue = if (isMomentumActive) {
-            motionSettings.scaleValue(0.12f, 0.06f) * atmosphere.glowIntensity
+            motionSettings.scaleValue(0.10f, 0.05f) * atmosphere.glowIntensity
         } else {
-            0.04f * atmosphere.glowIntensity
+            0.03f * atmosphere.glowIntensity
         },
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = motionSettings.scaleDuration(2500), 
+                durationMillis = motionSettings.scaleDuration(3000),
                 easing = EaseInOutSine
             ),
             repeatMode = RepeatMode.Reverse
@@ -109,19 +109,21 @@ fun CircularProgressSection(
             )
             
             Text(
-                text = "of target",
+                text = "of target".uppercase(),
                 style = MaterialTheme.typography.labelSmall,
-                color = SecondaryText,
-                letterSpacing = 0.5.sp
+                color = SecondaryText.copy(alpha = 0.6f),
+                letterSpacing = 1.5.sp,
+                fontWeight = FontWeight.Bold
             )
             
-            Spacer(modifier = Modifier.height(4.dp))
+            Spacer(modifier = Modifier.height(6.dp))
             
             Text(
                 text = "₹%,d saved".format(totalSaved),
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold,
-                color = adaptiveGold
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = adaptiveGold,
+                letterSpacing = (-0.5).sp
             )
         }
     }

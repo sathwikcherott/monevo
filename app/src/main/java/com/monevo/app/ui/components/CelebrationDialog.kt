@@ -31,19 +31,20 @@ fun CelebrationDialog(
     onDismiss: () -> Unit
 ) {
     val isFinal = celebration is CelebrationType.FinalGoal
+    val shape = RoundedCornerShape(24.dp)
     
     Dialog(onDismissRequest = onDismiss) {
         Surface(
-            shape = RoundedCornerShape(if (isFinal) 32.dp else 28.dp),
+            shape = shape,
             color = PrimaryCard,
             tonalElevation = 8.dp,
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(16.dp)
                 .shadow(
-                    elevation = 24.dp,
-                    shape = RoundedCornerShape(if (isFinal) 32.dp else 28.dp),
-                    spotColor = AccentGold.copy(alpha = 0.2f)
+                    elevation = 16.dp,
+                    shape = shape,
+                    spotColor = AccentGold.copy(alpha = if (isFinal) 0.15f else 0.05f)
                 )
         ) {
             Column(

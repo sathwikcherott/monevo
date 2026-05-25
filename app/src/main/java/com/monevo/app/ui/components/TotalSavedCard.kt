@@ -13,6 +13,7 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import com.monevo.app.ui.atmosphere.getAdaptiveGold
 import com.monevo.app.ui.motion.LocalMotionSettings
@@ -78,9 +79,9 @@ fun TotalSavedCard(
                 scaleY = if (isGlowActive) recognitionScale else breathingScale
             }
             .shadow(
-                elevation = if (isGlowActive || isCompleted) motionSettings.scaleDp(12.dp, 2.dp) else 0.dp,
+                elevation = if (isGlowActive || isCompleted) motionSettings.scaleDp(8.dp, 2.dp) else 0.dp,
                 shape = RoundedCornerShape(24.dp),
-                spotColor = adaptiveGold.copy(alpha = if (isCompleted) 0.2f else glowAlpha)
+                spotColor = adaptiveGold.copy(alpha = if (isCompleted) 0.15f else glowAlpha)
             ),
         colors = CardDefaults.cardColors(containerColor = PrimaryCard),
         shape = RoundedCornerShape(24.dp),
@@ -97,14 +98,17 @@ fun TotalSavedCard(
                 Column {
                     Text(
                         text = "Total Saved",
-                        style = MaterialTheme.typography.labelMedium,
-                        color = SecondaryText
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SecondaryText.copy(alpha = 0.8f),
+                        letterSpacing = 1.sp,
+                        fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "₹${totalProvider()}",
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryText
+                        color = PrimaryText,
+                        letterSpacing = (-0.5).sp
                     )
                 }
                 

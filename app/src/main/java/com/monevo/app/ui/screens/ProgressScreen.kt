@@ -32,7 +32,7 @@ fun ProgressScreen(
             .statusBarsPadding()
             .padding(horizontal = 20.dp)
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
         
         Text(
             text = "Progress",
@@ -52,8 +52,9 @@ fun ProgressScreen(
             ) {
                 if (isMomentumBuilding) {
                     MomentumBanner()
+                    Spacer(modifier = Modifier.height(8.dp))
                 } else {
-                    Spacer(modifier = Modifier.height(16.dp))
+                    Spacer(modifier = Modifier.height(20.dp))
                 }
                 
                 CircularProgressSection(

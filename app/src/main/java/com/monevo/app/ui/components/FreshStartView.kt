@@ -32,9 +32,9 @@ fun FreshStartView(
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 0.4f,
+        targetValue = 0.25f, // Reduced intensity for restraint
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = EaseInOutSine),
+            animation = tween(3000, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glowAlpha"

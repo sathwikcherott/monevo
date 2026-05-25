@@ -155,8 +155,9 @@ private fun MilestoneNode(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             fontSize = 9.sp,
-            fontWeight = if (isTarget) FontWeight.Bold else FontWeight.Medium,
-            color = if (isTarget) PrimaryText else SecondaryText.copy(alpha = if (isReached) 0.8f else 0.3f)
+            fontWeight = if (isTarget) FontWeight.Bold else FontWeight.SemiBold,
+            color = if (isTarget) PrimaryText else SecondaryText.copy(alpha = if (isReached) 0.7f else 0.25f),
+            letterSpacing = 0.5.sp
         )
     }
 }

@@ -22,7 +22,7 @@ fun InsightsScreen() {
             .padding(horizontal = 20.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
         
         Text(
             text = "Growth",

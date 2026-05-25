@@ -51,7 +51,7 @@ fun ProfileScreen(viewModel: SavingsViewModel) {
             .padding(horizontal = 20.dp)
             .verticalScroll(rememberScrollState())
     ) {
-        Spacer(modifier = Modifier.height(24.dp))
+        Spacer(modifier = Modifier.height(28.dp))
         
         Text(
             text = "Profile",
@@ -60,7 +60,7 @@ fun ProfileScreen(viewModel: SavingsViewModel) {
             color = PrimaryText,
             letterSpacing = (-0.5).sp
         )
-        
+
         Spacer(modifier = Modifier.height(24.dp))
         
         // 1. Hero / Profile Section
@@ -179,11 +179,11 @@ fun ProfileHeroCard(
             .fillMaxWidth()
             .shadow(
                 elevation = motionSettings.scaleDp(elevation, if (elevation > 0.dp) 2.dp else 0.dp),
-                shape = RoundedCornerShape(28.dp),
-                spotColor = adaptiveGold.copy(alpha = if (progress >= 0.7f) 0.2f else 0f)
+                shape = RoundedCornerShape(24.dp),
+                spotColor = adaptiveGold.copy(alpha = if (progress >= 0.7f) 0.15f else 0f)
             ),
         colors = CardDefaults.cardColors(containerColor = PrimaryCard),
-        shape = RoundedCornerShape(28.dp)
+        shape = RoundedCornerShape(24.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
             Row(
@@ -222,13 +222,14 @@ fun ProfileHeroCard(
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
                         color = PrimaryText,
-                        letterSpacing = (-0.5).sp
+                        letterSpacing = (-1).sp
                     )
                     Text(
                         text = subtitle,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = SecondaryText,
-                        modifier = Modifier.padding(top = 4.dp)
+                        color = SecondaryText.copy(alpha = 0.8f),
+                        modifier = Modifier.padding(top = 4.dp),
+                        lineHeight = 20.sp
                     )
                 }
                 
@@ -277,7 +278,7 @@ fun ProfileSection(title: String, content: @Composable ColumnScope.() -> Unit) {
         )
         Surface(
             color = PrimaryCard,
-            shape = RoundedCornerShape(20.dp),
+            shape = RoundedCornerShape(24.dp),
             modifier = Modifier.fillMaxWidth()
         ) {
             Column(content = content)
@@ -361,26 +362,26 @@ fun ProfileToggleOption(
 @Composable
 fun MonevoToggle(checked: Boolean) {
     val trackColor by animateColorAsState(
-        targetValue = if (checked) SoftGold else ElevatedCard,
+        targetValue = if (checked) SoftGold.copy(alpha = 0.9f) else ElevatedCard,
         animationSpec = spring(),
         label = "trackColor"
     )
     
     val thumbColor by animateColorAsState(
-        targetValue = if (checked) Background else SecondaryText.copy(alpha = 0.6f),
+        targetValue = if (checked) Background else SecondaryText.copy(alpha = 0.5f),
         animationSpec = spring(),
         label = "thumbColor"
     )
     
     val thumbOffset by animateDpAsState(
-        targetValue = if (checked) 18.dp else 0.dp,
-        animationSpec = spring(stiffness = 800f),
+        targetValue = if (checked) 16.dp else 0.dp,
+        animationSpec = spring(stiffness = 900f),
         label = "thumbOffset"
     )
 
     Box(
         modifier = Modifier
-            .size(width = 40.dp, height = 22.dp)
+            .size(width = 38.dp, height = 20.dp)
             .clip(CircleShape)
             .background(trackColor)
             .padding(2.dp)
@@ -388,7 +389,7 @@ fun MonevoToggle(checked: Boolean) {
         Box(
             modifier = Modifier
                 .offset(x = thumbOffset)
-                .size(18.dp)
+                .size(16.dp)
                 .clip(CircleShape)
                 .background(thumbColor)
         )
@@ -507,7 +508,7 @@ fun MonevoResetDialog(
             }
         },
         containerColor = PrimaryCard,
-        shape = RoundedCornerShape(28.dp),
+        shape = RoundedCornerShape(24.dp),
         tonalElevation = 8.dp
     )
 }

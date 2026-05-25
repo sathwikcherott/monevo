@@ -68,14 +68,14 @@ fun MilestoneAccordionHeader(
             }
         },
         color = PrimaryCard,
-        shape = RoundedCornerShape(16.dp),
+        shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
             .alpha(if (isLocked) 0.6f else 1f)
             .shadow(
-                elevation = if (isGlowActive) motionSettings.scaleDp(16.dp, 4.dp) else 0.dp,
-                shape = RoundedCornerShape(16.dp),
-                spotColor = AccentGold.copy(alpha = glowAlpha)
+                elevation = if (isGlowActive) motionSettings.scaleDp(8.dp, 2.dp) else 0.dp,
+                shape = RoundedCornerShape(20.dp),
+                spotColor = adaptiveGold.copy(alpha = glowAlpha)
             )
     ) {
         Row(
@@ -98,7 +98,7 @@ fun MilestoneAccordionHeader(
                     text = name,
                     style = MaterialTheme.typography.labelLarge,
                     color = if (isExpanded) adaptiveGold else if (isLocked) SecondaryText else PrimaryText,
-                    fontWeight = FontWeight.SemiBold,
+                    fontWeight = if (isExpanded) FontWeight.Bold else FontWeight.SemiBold,
                     letterSpacing = 0.5.sp
                 )
             }
@@ -125,12 +125,12 @@ fun TileGrid(
     
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(10.dp) // Refined vertical rhythm
+        verticalArrangement = Arrangement.spacedBy(12.dp) // More breathable vertical rhythm
     ) {
         rows.forEach { rowTiles ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp) // Tighter horizontal rhythm
+                horizontalArrangement = Arrangement.spacedBy(10.dp) // More breathable horizontal rhythm
             ) {
                 rowTiles.forEach { tile ->
                     Box(modifier = Modifier.weight(1f)) {

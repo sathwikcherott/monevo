@@ -127,7 +127,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 .padding(horizontal = 20.dp)
                 .graphicsLayer { alpha = contentAlpha }
         ) {
-            Spacer(modifier = Modifier.height(24.dp))
+            Spacer(modifier = Modifier.height(28.dp))
 
             Text(
                 text = "Monevo",
@@ -137,7 +137,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 letterSpacing = (-0.5).sp
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             TotalSavedCard(
                 totalProvider = { viewModel.totalSaved },
