@@ -9,6 +9,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -21,14 +22,15 @@ fun TotalSavedCard(
     completedCountProvider: () -> Int,
     totalCountProvider: () -> Int,
     goalProvider: () -> Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isGlowActive: Boolean = false
 ) {
     val progressValue = progressProvider()
     val isCompleted = progressValue >= 1f
 
     // Subtle pulse for completion
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val scale by infiniteTransition.animateFloat(
+    val breathingScale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = if (isCompleted) 1.02f else 1f,
         animationSpec = infiniteRepeatable(
@@ -38,13 +40,31 @@ fun TotalSavedCard(
         label = "scale"
     )
 
+    // Cinematic one-time pulse/glow scale
+    val recognitionScale by animateFloatAsState(
+        targetValue = if (isGlowActive) 1.04f else 1f,
+        animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy, stiffness = Spring.StiffnessLow),
+        label = "recognitionScale"
+    )
+
+    val glowAlpha by animateFloatAsState(
+        targetValue = if (isGlowActive) 0.4f else 0f,
+        animationSpec = tween(500, easing = FastOutSlowInEasing),
+        label = "glowAlpha"
+    )
+
     Card(
         modifier = modifier
             .fillMaxWidth()
             .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            },
+                scaleX = if (isGlowActive) recognitionScale else breathingScale
+                scaleY = if (isGlowActive) recognitionScale else breathingScale
+            }
+            .shadow(
+                elevation = if (isGlowActive) 20.dp else 0.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = AccentGold.copy(alpha = glowAlpha)
+            ),
         colors = CardDefaults.cardColors(containerColor = PrimaryCard),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)

@@ -2,10 +2,7 @@ package com.monevo.app.data
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.booleanPreferencesKey
-import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.stringSetPreferencesKey
+import androidx.datastore.preferences.core.*
 import androidx.datastore.preferences.preferencesDataStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -19,6 +16,7 @@ class MonevoDataStore(private val context: Context) {
         private val COMPLETED_TILES_DATA_KEY = stringSetPreferencesKey("completed_tiles_data")
         private val ONBOARDING_COMPLETED_KEY = booleanPreferencesKey("onboarding_completed")
         private val SHOWN_CELEBRATIONS_KEY = stringSetPreferencesKey("shown_celebrations")
+        private val GOAL_AMOUNT_KEY = intPreferencesKey("goal_amount")
     }
 
     val completedTilesData: Flow<Map<Int, Long>> = context.dataStore.data.map { preferences ->
@@ -40,6 +38,10 @@ class MonevoDataStore(private val context: Context) {
         preferences[SHOWN_CELEBRATIONS_KEY] ?: emptySet()
     }
 
+    val goalAmount: Flow<Int?> = context.dataStore.data.map { preferences ->
+        preferences[GOAL_AMOUNT_KEY]
+    }
+
     suspend fun saveProgress(completedData: Map<Int, Long>) {
         context.dataStore.edit { preferences ->
             preferences[COMPLETED_TILES_DATA_KEY] = completedData.map { "${it.key}:${it.value}" }.toSet()
@@ -59,11 +61,18 @@ class MonevoDataStore(private val context: Context) {
         }
     }
 
+    suspend fun saveGoalAmount(amount: Int) {
+        context.dataStore.edit { preferences ->
+            preferences[GOAL_AMOUNT_KEY] = amount
+        }
+    }
+
     suspend fun clearAll() {
         context.dataStore.edit { preferences ->
             preferences.remove(COMPLETED_TILES_DATA_KEY)
             preferences.remove(ONBOARDING_COMPLETED_KEY)
             preferences.remove(SHOWN_CELEBRATIONS_KEY)
+            preferences.remove(GOAL_AMOUNT_KEY)
         }
     }
 }

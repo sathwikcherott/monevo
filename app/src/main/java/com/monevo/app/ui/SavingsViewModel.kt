@@ -20,12 +20,12 @@ import kotlin.random.Random
 class SavingsViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStore = MonevoDataStore(application)
     
-    val goalAmount: Int = MonevoConfig.DEFAULT_SAVINGS_GOAL
-    private val milestoneStep = MonevoConfig.MILESTONE_STEP
+    var goalAmount by mutableStateOf(MonevoConfig.DEFAULT_SAVINGS_GOAL)
+        private set
     
-    val tiles = mutableStateListOf<SavingsTile>().apply {
-        addAll(generateTiles(goalAmount))
-    }
+    private val milestoneStep = 5000
+    
+    val tiles = mutableStateListOf<SavingsTile>()
 
     var isOnboardingCompleted by mutableStateOf(true)
 
@@ -38,7 +38,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     }
 
     val progress by derivedStateOf {
-        totalSaved.toFloat() / goalAmount
+        if (goalAmount > 0) totalSaved.toFloat() / goalAmount else 0f
     }
 
     // --- PURE CALCULATION LOGIC ---
@@ -149,17 +149,18 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             currentGroupTiles.add(tile)
             currentGroupSum += tile.amount
             
-            if (currentGroupSum >= milestoneStep && groupStartValue + milestoneStep <= goalAmount) {
+            if (currentGroupSum >= milestoneStep) {
                 groups.add(
                     MilestoneGroup(
                         id = groupId++,
                         rangeStart = groupStartValue,
-                        rangeEnd = groupStartValue + milestoneStep,
+                        rangeEnd = groupStartValue + currentGroupSum,
                         tiles = currentGroupTiles,
-                        isLocked = false // Placeholder, will update below
+                        isLocked = false,
+                        totalGoal = goalAmount
                     )
                 )
-                groupStartValue += milestoneStep
+                groupStartValue += currentGroupSum
                 currentGroupTiles = mutableListOf()
                 currentGroupSum = 0
             }
@@ -172,7 +173,8 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                     rangeStart = groupStartValue,
                     rangeEnd = goalAmount,
                     tiles = currentGroupTiles,
-                    isLocked = false
+                    isLocked = false,
+                    totalGoal = goalAmount
                 )
             )
         }
@@ -185,6 +187,11 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     init {
         viewModelScope.launch {
+            val savedGoal = dataStore.goalAmount.first() ?: MonevoConfig.DEFAULT_SAVINGS_GOAL
+            goalAmount = savedGoal
+            
+            tiles.addAll(generateTiles(goalAmount))
+
             val savedTilesData = dataStore.completedTilesData.first()
             val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
             val savedCelebrations = dataStore.shownCelebrationIds.first()
@@ -198,6 +205,31 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                     tiles[index] = tiles[index].copy(isCompleted = true, completedAt = timestamp)
                 }
             }
+        }
+    }
+
+    fun updateGoal(newGoal: Int) {
+        if (newGoal == goalAmount || newGoal <= 0) return
+        
+        viewModelScope.launch {
+            val currentSaved = totalSaved
+            dataStore.saveGoalAmount(newGoal)
+            goalAmount = newGoal
+            
+            // Regenerate tiles
+            val newTiles = generateTiles(newGoal)
+            tiles.clear()
+            tiles.addAll(newTiles)
+            
+            // Restore progress
+            var restoredAmount = 0
+            tiles.forEachIndexed { index, tile ->
+                if (restoredAmount + tile.amount <= currentSaved) {
+                    tiles[index] = tile.copy(isCompleted = true, completedAt = System.currentTimeMillis())
+                    restoredAmount += tile.amount
+                }
+            }
+            saveState()
         }
     }
 
@@ -285,23 +317,30 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     private fun generateTiles(target: Int): List<SavingsTile> {
         val result = mutableListOf<SavingsTile>()
-        val denominations = listOf(50, 100, 150, 200, 300, 500)
-        var currentSum = 0
+        val milestoneStep = 5000
         var idCounter = 0
         val random = Random(42)
 
-        while (currentSum < target) {
-            val remaining = target - currentSum
-            val possibleDenominations = denominations.filter { it <= remaining }
-            val amount = if (possibleDenominations.isNotEmpty()) {
-                possibleDenominations[random.nextInt(possibleDenominations.size)]
-            } else { remaining }
-            
-            result.add(SavingsTile(idCounter++, amount))
-            currentSum += amount
+        for (start in 0 until target step milestoneStep) {
+            val sectionTarget = minOf(milestoneStep, target - start)
+            val sectionTiles = mutableListOf<SavingsTile>()
+            var sectionSum = 0
+            val denominations = listOf(50, 100, 150, 200, 300, 500)
+
+            while (sectionSum < sectionTarget) {
+                val remaining = sectionTarget - sectionSum
+                val possibleDenominations = denominations.filter { it <= remaining }
+                val amount = if (possibleDenominations.isNotEmpty()) {
+                    possibleDenominations[random.nextInt(possibleDenominations.size)]
+                } else { remaining }
+                
+                sectionTiles.add(SavingsTile(idCounter++, amount))
+                sectionSum += amount
+            }
+            result.addAll(sectionTiles.shuffled(random))
         }
         
-        return result.shuffled(random)
+        return result
     }
 }
 
@@ -310,10 +349,11 @@ data class MilestoneGroup(
     val rangeStart: Int,
     val rangeEnd: Int,
     val tiles: List<SavingsTile>,
-    val isLocked: Boolean
+    val isLocked: Boolean,
+    val totalGoal: Int
 ) {
     val name: String
-        get() = if (rangeEnd == MonevoConfig.DEFAULT_SAVINGS_GOAL && rangeStart > 40000) "Final Milestone" 
+        get() = if (rangeEnd >= totalGoal && rangeStart >= (totalGoal - 5000)) "Final Milestone"
                 else "₹${rangeStart / 1000}K → ₹${rangeEnd / 1000}K"
 
     val isCompleted: Boolean

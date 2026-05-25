@@ -16,7 +16,9 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
@@ -32,6 +34,7 @@ import kotlin.math.roundToInt
 fun DebugMilestoneOverlay(viewModel: SavingsViewModel) {
     var isExpanded by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
     
     // Floating position state
     var offsetX by remember { mutableStateOf(0f) }
@@ -62,6 +65,9 @@ fun DebugMilestoneOverlay(viewModel: SavingsViewModel) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // [DEBUG] Visual Confirmation for Haptics
+        DebugHapticVisualizer()
+
         Box(
             modifier = Modifier
                 .offset { IntOffset(offsetX.roundToInt(), offsetY.roundToInt()) }
@@ -138,6 +144,31 @@ fun DebugMilestoneOverlay(viewModel: SavingsViewModel) {
                         ) {
                             Text("+ Prog", color = Color.Black, fontSize = 11.sp)
                         }
+                    }
+
+                    // Near Complete Control
+                    Button(
+                        onClick = { DebugMilestoneController.nearComplete(viewModel) },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.DarkGray.copy(alpha = 0.8f)),
+                        contentPadding = PaddingValues(horizontal = 12.dp),
+                        modifier = Modifier.fillMaxWidth().height(34.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Near Complete", color = Color.White, fontSize = 11.sp)
+                    }
+
+                    // Haptic Test Control
+                    Button(
+                        onClick = { 
+                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                            DebugHapticController.triggerVisualHaptic()
+                        },
+                        colors = ButtonDefaults.buttonColors(containerColor = Color.Gray.copy(alpha = 0.5f)),
+                        contentPadding = PaddingValues(horizontal = 12.dp),
+                        modifier = Modifier.fillMaxWidth().height(34.dp),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Test Haptics", color = Color.White, fontSize = 11.sp)
                     }
 
                     // Reset Control

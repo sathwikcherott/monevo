@@ -21,8 +21,10 @@ fun ProgressScreen(
 ) {
     val consistency = viewModel.consistencyStats
     val totalSaved = viewModel.totalSaved
+    val progress = viewModel.progress
     val isFreshStart = totalSaved == 0
-    val isMomentumBuilding = totalSaved in 1000..15000
+    // Momentum building is now percentage-based (2% to 30% of journey)
+    val isMomentumBuilding = progress in 0.02f..0.3f
 
     Column(
         modifier = Modifier
@@ -86,7 +88,10 @@ fun ProgressScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                MilestonesProgress(totalSaved = viewModel.totalSaved)
+                MilestonesProgress(
+                    totalSaved = viewModel.totalSaved,
+                    goalAmount = viewModel.goalAmount
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 

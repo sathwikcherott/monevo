@@ -74,7 +74,7 @@ fun CelebrationDialog(
                 Text(
                     text = when (celebration) {
                         is CelebrationType.MilestoneReached -> "Milestone Reached"
-                        is CelebrationType.FinalGoal -> "₹50,000 Goal Completed"
+                        is CelebrationType.FinalGoal -> "₹%,d Goal Completed".format(celebration.amount)
                     },
                     style = if (isFinal) MaterialTheme.typography.headlineMedium else MaterialTheme.typography.headlineSmall,
                     fontWeight = FontWeight.Bold,

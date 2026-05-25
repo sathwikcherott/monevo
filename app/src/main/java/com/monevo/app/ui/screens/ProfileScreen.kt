@@ -71,7 +71,7 @@ fun ProfileScreen(viewModel: SavingsViewModel) {
         
         // 2. Savings Goal Section
         ProfileSection(title = "Savings Goal") {
-            GoalPresetsRow(currentGoal = viewModel.goalAmount)
+            GoalPresetsRow(viewModel = viewModel)
         }
         
         Spacer(modifier = Modifier.height(24.dp))
@@ -272,8 +272,9 @@ fun ProfileSection(title: String, content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-fun GoalPresetsRow(currentGoal: Int) {
-    val goals = listOf(10000, 25000, 50000, 0)
+fun GoalPresetsRow(viewModel: SavingsViewModel) {
+    val currentGoal = viewModel.goalAmount
+    val goals = listOf(10000, 25000, 50000, 100000)
     Row(
         modifier = Modifier
             .padding(12.dp)
@@ -281,15 +282,15 @@ fun GoalPresetsRow(currentGoal: Int) {
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
         goals.forEach { goal ->
-            val label = if (goal == 0) "Custom" else "₹${goal / 1000}K"
-            val isSelected = goal == currentGoal || (goal == 0 && currentGoal !in listOf(10000, 25000, 50000))
+            val label = "₹${goal / 1000}K"
+            val isSelected = goal == currentGoal
             
             Surface(
                 modifier = Modifier
                     .weight(1f)
                     .height(44.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .clickable { /* Future Logic */ },
+                    .clickable { viewModel.updateGoal(goal) },
                 color = if (isSelected) ElevatedCard else Background.copy(alpha = 0.3f)
             ) {
                 Box(contentAlignment = Alignment.Center) {

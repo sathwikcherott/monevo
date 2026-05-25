@@ -57,4 +57,29 @@ object DebugMilestoneController {
             }
         }
     }
+
+    /**
+     * Instantly simulates an "almost completed journey" state.
+     * Completes all tiles except for one in the final section.
+     */
+    fun nearComplete(viewModel: SavingsViewModel) {
+        val groups = viewModel.groupedTiles
+        if (groups.isEmpty()) return
+
+        val lastGroupIndex = groups.size - 1
+        
+        groups.forEachIndexed { groupIndex, group ->
+            group.tiles.forEachIndexed { tileIndex, tile ->
+                val shouldBeCompleted = !(groupIndex == lastGroupIndex && tileIndex == group.tiles.size - 1)
+                
+                val index = viewModel.tiles.indexOfFirst { it.id == tile.id }
+                if (index != -1) {
+                    viewModel.tiles[index] = viewModel.tiles[index].copy(
+                        isCompleted = shouldBeCompleted,
+                        completedAt = if (shouldBeCompleted) System.currentTimeMillis() else null
+                    )
+                }
+            }
+        }
+    }
 }

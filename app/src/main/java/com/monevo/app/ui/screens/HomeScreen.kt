@@ -13,6 +13,8 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -20,16 +22,31 @@ import com.monevo.app.ui.CelebrationType
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.PrimaryText
+import kotlinx.coroutines.delay
 
 @Composable
 fun HomeScreen(viewModel: SavingsViewModel) {
     val groupedTiles = viewModel.groupedTiles
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
     var showConfetti by remember { mutableStateOf(false) }
+    var showRecognitionGlow by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
 
-    // Trigger confetti for final goal
+    // Trigger sequenced celebration for final goal
     LaunchedEffect(viewModel.activeCelebration) {
         if (viewModel.activeCelebration is CelebrationType.FinalGoal) {
+            // 1. Completion Pause / Recognition Moment
+            delay(400)
+            
+            // 2. Haptic Feedback
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            
+            // 3. Progress Completion Pulse
+            showRecognitionGlow = true
+            delay(800) // Pulse duration
+            showRecognitionGlow = false
+            
+            // 4. Delayed Confetti Trigger
             showConfetti = true
         }
     }
@@ -66,7 +83,8 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 progressProvider = { viewModel.progress },
                 completedCountProvider = { viewModel.tiles.count { it.isCompleted } },
                 totalCountProvider = { viewModel.tiles.size },
-                goalProvider = { viewModel.goalAmount }
+                goalProvider = { viewModel.goalAmount },
+                isGlowActive = showRecognitionGlow
             )
 
             Spacer(modifier = Modifier.height(24.dp))

@@ -20,18 +20,16 @@ import com.monevo.app.ui.theme.*
 @Composable
 fun MilestonesProgress(
     totalSaved: Int,
+    goalAmount: Int,
     modifier: Modifier = Modifier
 ) {
-    val milestones = remember {
-        listOf(
-            MilestoneData(0, "0"),
-            MilestoneData(5000, "₹5K"),
-            MilestoneData(10000, "₹10K"),
-            MilestoneData(20000, "₹20K"),
-            MilestoneData(30000, "₹30K"),
-            MilestoneData(40000, "₹40K"),
-            MilestoneData(50000, "₹50K")
-        )
+    val milestones = remember(goalAmount) {
+        val step = goalAmount / 5
+        List(6) { index ->
+            val amount = index * step
+            val label = if (amount == 0) "0" else "₹${amount / 1000}K"
+            MilestoneData(amount, label)
+        }
     }
 
     val targetIndex = milestones.indexOfFirst { totalSaved < it.amount }.let {
