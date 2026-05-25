@@ -2,6 +2,8 @@ package com.monevo.app.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.animation.core.*
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -9,8 +11,10 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AutoAwesome
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -25,6 +29,17 @@ fun FreshStartView(
     onBeginSaving: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "breathing")
+    val glowAlpha by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 0.4f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -37,7 +52,7 @@ fun FreshStartView(
             contentAlignment = Alignment.Center,
             modifier = Modifier.padding(bottom = 40.dp)
         ) {
-            androidx.compose.foundation.Canvas(modifier = Modifier.size(180.dp)) {
+            Canvas(modifier = Modifier.size(180.dp)) {
                 drawArc(
                     color = DividerColor.copy(alpha = 0.4f),
                     startAngle = -90f,
@@ -83,23 +98,36 @@ fun FreshStartView(
 
         Spacer(modifier = Modifier.height(48.dp))
 
-        Button(
-            onClick = onBeginSaving,
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp),
-            colors = ButtonDefaults.buttonColors(
-                containerColor = SoftGold,
-                contentColor = Background
-            ),
-            shape = RoundedCornerShape(16.dp),
-            elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
-        ) {
-            Text(
-                text = "Begin Saving",
-                style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.Bold
-            )
+        Box(contentAlignment = Alignment.Center) {
+            // Subtle breathing glow behind CTA
+            Surface(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
+                    .padding(horizontal = 2.dp)
+                    .alpha(glowAlpha),
+                color = SoftGold,
+                shape = RoundedCornerShape(16.dp)
+            ) {}
+
+            Button(
+                onClick = onBeginSaving,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = SoftGold,
+                    contentColor = Background
+                ),
+                shape = RoundedCornerShape(16.dp),
+                elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
+            ) {
+                Text(
+                    text = "Begin Saving",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
     }
 }

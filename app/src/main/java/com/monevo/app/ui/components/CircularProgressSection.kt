@@ -1,10 +1,12 @@
 package com.monevo.app.ui.components
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
@@ -18,8 +20,20 @@ import com.monevo.app.ui.theme.*
 fun CircularProgressSection(
     progress: Float,
     totalSaved: Int,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isMomentumActive: Boolean = false,
 ) {
+    val infiniteTransition = rememberInfiniteTransition(label = "ringGlow")
+    val pulseAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.04f,
+        targetValue = if (isMomentumActive) 0.12f else 0.04f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2500, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseAlpha"
+    )
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -42,7 +56,7 @@ fun CircularProgressSection(
             
             // Highly diffused ambient glow (blended into active arc)
             drawArc(
-                color = AccentGold.copy(alpha = 0.04f),
+                color = AccentGold.copy(alpha = pulseAlpha),
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
@@ -50,7 +64,7 @@ fun CircularProgressSection(
             )
 
             drawArc(
-                color = AccentGold.copy(alpha = 0.08f),
+                color = AccentGold.copy(alpha = pulseAlpha * 2f),
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,

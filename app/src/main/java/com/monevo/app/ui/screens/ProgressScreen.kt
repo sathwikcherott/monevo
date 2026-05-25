@@ -20,7 +20,9 @@ fun ProgressScreen(
     onNavigateHome: () -> Unit
 ) {
     val consistency = viewModel.consistencyStats
-    val isFreshStart = viewModel.totalSaved == 0
+    val totalSaved = viewModel.totalSaved
+    val isFreshStart = totalSaved == 0
+    val isMomentumBuilding = totalSaved in 1000..15000
 
     Column(
         modifier = Modifier
@@ -46,11 +48,16 @@ fun ProgressScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                Spacer(modifier = Modifier.height(16.dp))
+                if (isMomentumBuilding) {
+                    MomentumBanner()
+                } else {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
                 
                 CircularProgressSection(
                     progress = viewModel.progress,
-                    totalSaved = viewModel.totalSaved
+                    totalSaved = totalSaved,
+                    isMomentumActive = isMomentumBuilding
                 )
                 
                 Spacer(modifier = Modifier.height(24.dp))
