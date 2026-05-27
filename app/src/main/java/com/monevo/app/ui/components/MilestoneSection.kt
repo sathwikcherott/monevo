@@ -57,6 +57,9 @@ fun MilestoneAccordionHeader(
         label = "glowAlpha"
     )
 
+    // Flattened visual layers: use alpha instead of complex shadows where possible
+    val containerAlpha = if (isLocked) 0.5f else 1f
+    
     Surface(
         onClick = if (isLocked) ({}) else {
             {
@@ -68,12 +71,17 @@ fun MilestoneAccordionHeader(
         shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer { alpha = if (isLocked) 0.5f else 1f }
-            .shadow(
-                elevation = if (isGlowActive) motionSettings.scaleDp(1.dp, 1.dp) else 0.dp,
-                shape = RoundedCornerShape(20.dp),
-                spotColor = adaptiveAccent.copy(alpha = glowAlpha),
-                ambientColor = Color.Transparent
+            .graphicsLayer { alpha = containerAlpha }
+            // Reduced shadow complexity for 120Hz stability
+            .then(
+                if (isGlowActive) {
+                    Modifier.shadow(
+                        elevation = 1.dp,
+                        shape = RoundedCornerShape(20.dp),
+                        spotColor = adaptiveAccent.copy(alpha = glowAlpha),
+                        ambientColor = Color.Transparent
+                    )
+                } else Modifier
             )
     ) {
         Row(
@@ -132,9 +140,9 @@ fun TileGrid(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                rowTiles.forEachIndexed { colIndex, tile ->
+                rowTiles.forEach { tile ->
                     Box(modifier = Modifier.weight(1f)) {
-                        val staggerIndex = baseStaggerIndex + (rowIndex * 5) + colIndex
+                        val staggerIndex = baseStaggerIndex + rowIndex // Simple row-based stagger
                         StaggeredEntranceWrapper(
                             index = staggerIndex,
                             isTriggered = isEntering
@@ -176,22 +184,22 @@ fun StaggeredEntranceWrapper(
         }
     }
 
-    val alpha by animateFloatAsState(
+    // Use a single graphicsLayer animation for both alpha and translation to reduce overhead
+    val entranceProgress by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(if (isReducedMotion) 300 else 450, easing = EaseOutCubic),
-        label = "tileAlpha"
-    )
-
-    val translateY by animateDpAsState(
-        targetValue = if (isVisible || isReducedMotion) 0.dp else 10.dp,
-        animationSpec = tween(450, easing = EaseOutCubic),
-        label = "tileTranslateY"
+        animationSpec = tween(
+            durationMillis = if (isReducedMotion) 300 else 400, 
+            easing = EaseOutCubic
+        ),
+        label = "entranceProgress"
     )
 
     Box(
         modifier = Modifier.graphicsLayer {
-            this.alpha = alpha
-            this.translationY = translateY.toPx()
+            alpha = entranceProgress
+            if (!isReducedMotion) {
+                translationY = (1f - entranceProgress) * 8.dp.toPx()
+            }
         }
     ) {
         content()

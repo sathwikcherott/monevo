@@ -31,27 +31,13 @@ fun TotalSavedCard(
     atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
     val motionSettings = LocalMotionSettings.current
-    val isReducedMotion = motionSettings.isReducedMotionEnabled
     val progressValue = progressProvider()
     val isCompleted = progressValue >= 1f
 
     val adaptiveAccent = atmosphere.getAdaptiveAccent()
-    val basePulseIntensity = if (isReducedMotion) 1f else motionSettings.scaleValue(1.01f, 1.002f)
-    val breathingTarget = 1f + (basePulseIntensity - 1f) * atmosphere.glowIntensity
-
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val breathingScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = if (isCompleted) basePulseIntensity else breathingTarget,
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = motionSettings.scaleDuration(if (isReducedMotion) 4000 else 3000), 
-                easing = EaseInOutSine
-            ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
+    
+    // Removed infinite breathing animation to reduce rendering overhead and visual busyness
+    // Constant ambient movement is reduced for a calmer premium feel.
 
     val recognitionScale by animateFloatAsState(
         targetValue = if (isGlowActive) motionSettings.scaleValue(1.02f, 1.005f) else 1f,
@@ -72,7 +58,8 @@ fun TotalSavedCard(
         modifier = modifier
             .fillMaxWidth()
             .graphicsLayer {
-                val s = if (isGlowActive) recognitionScale else breathingScale
+                // Only scale during active recognition moments
+                val s = recognitionScale
                 scaleX = s
                 scaleY = s
             }

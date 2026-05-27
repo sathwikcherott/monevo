@@ -29,6 +29,7 @@ import com.monevo.app.ui.CelebrationType
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.*
+import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import com.monevo.app.debug.DebugHapticController
 import com.monevo.app.ui.motion.LocalMotionSettings
 import kotlinx.coroutines.delay
@@ -38,7 +39,8 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     val motionSettings = LocalMotionSettings.current
     val isReducedMotion = motionSettings.isReducedMotionEnabled
     
-    val groupedTiles = viewModel.groupedTiles
+    // Stabilize state access to minimize parent recompositions
+    val groupedTiles by remember { derivedStateOf { viewModel.groupedTiles } }
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
     var showConfetti by remember { mutableStateOf(false) }
     var showRecognitionGlow by remember { mutableStateOf(false) }
@@ -52,6 +54,14 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
+
+    // Use specific derived states for child components to prevent unnecessary ripple recompositions
+    val totalSaved = remember { derivedStateOf { viewModel.totalSaved } }
+    val progress = remember { derivedStateOf { viewModel.progress } }
+    val tilesCount = remember { derivedStateOf { viewModel.tiles.count { it.isCompleted } } }
+    val tilesTotal = remember { derivedStateOf { viewModel.tiles.size } }
+    val goalAmount = remember { derivedStateOf { viewModel.goalAmount } }
+    val atmosphere = remember { derivedStateOf { viewModel.atmosphere } }
 
     LaunchedEffect(viewModel.isFreshStartArrival, viewModel.isAppLaunchEntrance) {
         if (viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) {
@@ -180,13 +190,13 @@ fun HomeScreen(viewModel: SavingsViewModel) {
 
             CinematicEntrance(index = 0, isTriggered = isEntering) {
                 TotalSavedCard(
-                    totalProvider = { viewModel.totalSaved },
-                    progressProvider = { viewModel.progress },
-                    completedCountProvider = { viewModel.tiles.count { it.isCompleted } },
-                    totalCountProvider = { viewModel.tiles.size },
-                    goalProvider = { viewModel.goalAmount },
+                    totalProvider = { totalSaved.value },
+                    progressProvider = { progress.value },
+                    completedCountProvider = { tilesCount.value },
+                    totalCountProvider = { tilesTotal.value },
+                    goalProvider = { goalAmount.value },
                     isGlowActive = showRecognitionGlow,
-                    atmosphere = viewModel.atmosphere
+                    atmosphere = atmosphere.value
                 )
             }
 
@@ -198,46 +208,21 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 groupedTiles.forEachIndexed { index, group ->
-                    val isExpanded = expandedSectionIndex == index && !group.isLocked
-
-                    item(key = "header_${group.id}") {
-                        CinematicEntrance(index = index + 1, isTriggered = isEntering) {
-                            MilestoneAccordionHeader(
-                                name = group.name,
-                                isExpanded = isExpanded,
-                                isLocked = group.isLocked,
-                                isGlowActive = pulsingMilestoneId == group.id,
-                                atmosphere = viewModel.atmosphere,
-                                onClick = {
-                                    if (!group.isLocked) {
-                                        expandedSectionIndex = if (isExpanded) -1 else index
-                                    }
-                                }
-                            )
-                        }
-                    }
-
-                    item(key = "content_${group.id}") {
-                        AnimatedVisibility(
-                            visible = isExpanded,
-                            enter = fadeIn(animationSpec = tween(400, easing = FastOutSlowInEasing)) +
-                                    expandVertically(animationSpec = tween(400, easing = FastOutSlowInEasing)),
-                            exit = fadeOut(animationSpec = tween(400, easing = FastOutSlowInEasing)) +
-                                    shrinkVertically(animationSpec = tween(400, easing = FastOutSlowInEasing))
-                        ) {
-                            Column(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(top = 8.dp, bottom = 16.dp)
-                            ) {
-                                TileGrid(
-                                    tiles = group.tiles,
-                                    onTileClick = { viewModel.toggleTile(it) },
-                                    isEntering = isEntering,
-                                    baseStaggerIndex = (index + 2) * 5
-                                )
-                            }
-                        }
+                    item(key = "group_${group.id}") {
+                        val isExpanded = expandedSectionIndex == index && !group.isLocked
+                        
+                        MilestoneGroupItem(
+                            group = group,
+                            isExpanded = isExpanded,
+                            index = index,
+                            isEntering = isEntering,
+                            isGlowActive = pulsingMilestoneId == group.id,
+                            atmosphere = atmosphere.value,
+                            onToggle = {
+                                expandedSectionIndex = if (isExpanded) -1 else index
+                            },
+                            onTileClick = { viewModel.toggleTile(it) }
+                        )
                     }
                 }
             }
@@ -247,6 +232,53 @@ fun HomeScreen(viewModel: SavingsViewModel) {
             PremiumConfettiOverlay(
                 onAnimationEnd = { showConfetti = false }
             )
+        }
+    }
+}
+
+@Composable
+private fun MilestoneGroupItem(
+    group: com.monevo.app.ui.MilestoneGroup,
+    isExpanded: Boolean,
+    index: Int,
+    isEntering: Boolean,
+    isGlowActive: Boolean,
+    atmosphere: JourneyAtmosphere,
+    onToggle: () -> Unit,
+    onTileClick: (Int) -> Unit
+) {
+    // Isolate the cinematic entrance to avoid re-triggering parent logic
+    CinematicEntrance(index = index + 1, isTriggered = isEntering) {
+        Column {
+            MilestoneAccordionHeader(
+                name = group.name,
+                isExpanded = isExpanded,
+                isLocked = group.isLocked,
+                isGlowActive = isGlowActive,
+                atmosphere = atmosphere,
+                onClick = onToggle
+            )
+
+            // Optimized expansion: Only recompose the visibility scope
+            AnimatedVisibility(
+                visible = isExpanded,
+                // Restrained transitions for better frame pacing at 120Hz
+                enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
+                exit = fadeOut(animationSpec = tween(250)) + shrinkVertically(animationSpec = tween(250))
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp, bottom = 16.dp)
+                ) {
+                    TileGrid(
+                        tiles = group.tiles,
+                        onTileClick = onTileClick,
+                        isEntering = isEntering,
+                        baseStaggerIndex = (index + 2) * 3 // Reduced stagger multiplier
+                    )
+                }
+            }
         }
     }
 }
@@ -268,28 +300,28 @@ fun CinematicEntrance(
             hasTriggered = true
             isVisible = false
             if (!isReducedMotion) {
-                delay(100L + (index * 80L))
+                delay(100L + (index * 60L)) // Refined delay for better frame pacing
             }
             isVisible = true
         }
     }
 
-    val alpha by animateFloatAsState(
+    // Single progress-based animation for both alpha and translation to reduce overhead at 120Hz
+    val entranceProgress by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(if (isReducedMotion) 300 else 550, easing = EaseOutCubic),
-        label = "entranceAlpha"
-    )
-
-    val translateY by animateDpAsState(
-        targetValue = if (isVisible || isReducedMotion) 0.dp else 12.dp,
-        animationSpec = tween(550, easing = EaseOutCubic),
-        label = "entranceTranslateY"
+        animationSpec = tween(
+            durationMillis = if (isReducedMotion) 300 else 500, 
+            easing = EaseOutCubic
+        ),
+        label = "entranceProgress"
     )
 
     Box(
         modifier = Modifier.graphicsLayer {
-            this.alpha = alpha
-            this.translationY = translateY.toPx()
+            alpha = entranceProgress
+            if (!isReducedMotion) {
+                translationY = (1f - entranceProgress) * 12.dp.toPx()
+            }
         }
     ) {
         content()
