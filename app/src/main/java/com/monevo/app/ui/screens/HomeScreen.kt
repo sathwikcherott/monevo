@@ -15,7 +15,9 @@ import android.content.Context
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -27,7 +29,7 @@ import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.CelebrationType
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.*
-import com.monevo.app.ui.theme.TextPrimary
+import com.monevo.app.ui.theme.*
 import com.monevo.app.debug.DebugHapticController
 import com.monevo.app.ui.motion.LocalMotionSettings
 import kotlinx.coroutines.delay
@@ -41,9 +43,20 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     var showRecognitionGlow by remember { mutableStateOf(false) }
     var pulsingMilestoneId by remember { mutableStateOf<Int?>(null) }
     var celebrationTrigger by remember { mutableStateOf<CelebrationType?>(null) }
+    var showFreshStartMessage by remember { mutableStateOf(false) }
 
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
+
+    // Handle Fresh Start Arrival
+    LaunchedEffect(viewModel.isFreshStartArrival) {
+        if (viewModel.isFreshStartArrival) {
+            showFreshStartMessage = true
+            delay(3000)
+            showFreshStartMessage = false
+            viewModel.isFreshStartArrival = false
+        }
+    }
 
     LaunchedEffect(viewModel.activeCelebration) {
         if (viewModel.activeCelebration != null) {
@@ -120,13 +133,33 @@ fun HomeScreen(viewModel: SavingsViewModel) {
         ) {
             Spacer(modifier = Modifier.height(28.dp))
 
-            Text(
-                text = "Monevo",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
-                letterSpacing = (-0.5).sp
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = "Monevo",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary,
+                    letterSpacing = (-0.5).sp
+                )
+
+                AnimatedVisibility(
+                    visible = showFreshStartMessage,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Text(
+                        text = "Fresh start activated",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = SoftAccentPink,
+                        fontWeight = FontWeight.Medium,
+                        modifier = Modifier.padding(end = 4.dp)
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 

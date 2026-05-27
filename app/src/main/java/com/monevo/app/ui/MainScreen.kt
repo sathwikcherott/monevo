@@ -99,7 +99,20 @@ fun MainScreen() {
                                     }
                                 ) 
                             }
-                            composable(Screen.Profile.route) { ProfileScreen(viewModel) }
+                            composable(Screen.Profile.route) { 
+                                ProfileScreen(
+                                    viewModel = viewModel,
+                                    onNavigateHome = {
+                                        navController.navigate(Screen.Home.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
+                                        }
+                                    }
+                                ) 
+                            }
                         }
                     }
                 }

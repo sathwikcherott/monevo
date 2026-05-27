@@ -39,6 +39,8 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     var reconfiguringGoal by mutableIntStateOf(0)
         private set
 
+    var isFreshStartArrival by mutableStateOf(false)
+
     private val shownCelebrationIds = mutableSetOf<String>()
     var activeCelebration by mutableStateOf<CelebrationType?>(null)
         private set
@@ -342,6 +344,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             isOnboardingCompleted = false
             shownCelebrationIds.clear()
             activeCelebration = null
+            isFreshStartArrival = true
         }
     }
 
