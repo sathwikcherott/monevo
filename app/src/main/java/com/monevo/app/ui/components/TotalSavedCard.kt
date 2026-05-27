@@ -10,12 +10,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
-import com.monevo.app.ui.atmosphere.getAdaptiveGold
+import com.monevo.app.ui.atmosphere.getAdaptiveAccent
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -34,38 +35,35 @@ fun TotalSavedCard(
     val progressValue = progressProvider()
     val isCompleted = progressValue >= 1f
 
-    // Atmosphere-aware values
-    val adaptiveGold = atmosphere.getAdaptiveGold()
-    val basePulseIntensity = motionSettings.scaleValue(1.02f, 1.005f)
-    // Scale breathing intensity with progress
+    val adaptiveAccent = atmosphere.getAdaptiveAccent()
+    // Very subtle pulse for AMOLED
+    val basePulseIntensity = motionSettings.scaleValue(1.01f, 1.002f)
     val breathingTarget = 1f + (basePulseIntensity - 1f) * atmosphere.glowIntensity
 
-    // Subtle pulse for completion
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
     val breathingScale by infiniteTransition.animateFloat(
         initialValue = 1f,
         targetValue = if (isCompleted) basePulseIntensity else breathingTarget,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = motionSettings.scaleDuration(2000), 
-                easing = FastOutSlowInEasing
+                durationMillis = motionSettings.scaleDuration(3000), 
+                easing = EaseInOutSine
             ),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
     )
 
-    // Cinematic one-time pulse/glow scale
     val recognitionScale by animateFloatAsState(
-        targetValue = if (isGlowActive) motionSettings.scaleValue(1.04f, 1.01f) else 1f,
+        targetValue = if (isGlowActive) motionSettings.scaleValue(1.02f, 1.005f) else 1f,
         animationSpec = motionSettings.gentleSpring(),
         label = "recognitionScale"
     )
 
     val glowAlpha by animateFloatAsState(
-        targetValue = if (isGlowActive) motionSettings.scaleValue(0.4f, 0.15f) else 0f,
+        targetValue = if (isGlowActive) motionSettings.scaleValue(0.15f, 0.08f) else 0f,
         animationSpec = tween(
-            durationMillis = motionSettings.scaleDuration(500), 
+            durationMillis = motionSettings.scaleDuration(600), 
             easing = FastOutSlowInEasing
         ),
         label = "glowAlpha"
@@ -79,11 +77,12 @@ fun TotalSavedCard(
                 scaleY = if (isGlowActive) recognitionScale else breathingScale
             }
             .shadow(
-                elevation = if (isGlowActive || isCompleted) motionSettings.scaleDp(8.dp, 2.dp) else 0.dp,
+                elevation = if (isGlowActive || isCompleted) motionSettings.scaleDp(2.dp, 0.5.dp) else 0.dp,
                 shape = RoundedCornerShape(24.dp),
-                spotColor = adaptiveGold.copy(alpha = if (isCompleted) 0.15f else glowAlpha)
+                spotColor = adaptiveAccent.copy(alpha = if (isCompleted) 0.08f else glowAlpha),
+                ambientColor = Color.Transparent
             ),
-        colors = CardDefaults.cardColors(containerColor = PrimaryCard),
+        colors = CardDefaults.cardColors(containerColor = SurfaceBase),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
@@ -99,7 +98,7 @@ fun TotalSavedCard(
                     Text(
                         text = "Total Saved",
                         style = MaterialTheme.typography.labelSmall,
-                        color = SecondaryText.copy(alpha = 0.8f),
+                        color = TextSecondary.copy(alpha = 0.6f),
                         letterSpacing = 1.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -107,13 +106,13 @@ fun TotalSavedCard(
                         text = "₹${totalProvider()}",
                         style = MaterialTheme.typography.headlineLarge,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryText,
+                        color = TextPrimary,
                         letterSpacing = (-0.5).sp
                     )
                 }
                 
                 Surface(
-                    color = ElevatedCard,
+                    color = SurfaceElevated,
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
@@ -121,7 +120,7 @@ fun TotalSavedCard(
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
                         style = MaterialTheme.typography.labelSmall,
                         fontWeight = FontWeight.Bold,
-                        color = adaptiveGold
+                        color = adaptiveAccent
                     )
                 }
             }
@@ -132,10 +131,10 @@ fun TotalSavedCard(
                 progress = { progressValue.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = adaptiveGold,
-                trackColor = ElevatedCard,
+                    .height(4.dp) // Thinner progress for AMOLED
+                    .clip(RoundedCornerShape(2.dp)),
+                color = adaptiveAccent,
+                trackColor = DividerStroke.copy(alpha = 0.4f),
             )
             
             Spacer(modifier = Modifier.height(10.dp))
@@ -149,12 +148,12 @@ fun TotalSavedCard(
                     text = "${(progressValue * 100).toInt()}% of goal",
                     style = MaterialTheme.typography.labelSmall,
                     fontWeight = FontWeight.SemiBold,
-                    color = adaptiveGold
+                    color = adaptiveAccent
                 )
                 Text(
                     text = "Goal: ₹%,d".format(goalProvider()),
                     style = MaterialTheme.typography.labelSmall,
-                    color = SecondaryText
+                    color = TextSecondary
                 )
             }
         }

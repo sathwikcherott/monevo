@@ -19,6 +19,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
@@ -27,10 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.model.SavingsTile
-import com.monevo.app.ui.theme.Background
-import com.monevo.app.ui.theme.ElevatedCard
-import com.monevo.app.ui.theme.PrimaryText
-import com.monevo.app.ui.theme.SuccessGreen
+import com.monevo.app.ui.theme.*
 
 @Composable
 fun SavingsTileItem(
@@ -43,7 +41,7 @@ fun SavingsTileItem(
     val isPressed by interactionSource.collectIsPressedAsState()
     
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.96f else 1f,
+        targetValue = if (isPressed) 0.97f else 1f, // Subtler scale for AMOLED
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessLow
@@ -52,13 +50,13 @@ fun SavingsTileItem(
     )
 
     val backgroundColor by animateColorAsState(
-        targetValue = if (tile.isCompleted) SuccessGreen else ElevatedCard.copy(alpha = 0.6f),
+        targetValue = if (tile.isCompleted) DeepProgressGreen.copy(alpha = 0.85f) else SurfaceElevated.copy(alpha = 0.4f),
         animationSpec = spring(stiffness = Spring.StiffnessLow), 
         label = "color"
     )
     
     val contentColor by animateColorAsState(
-        targetValue = if (tile.isCompleted) Background else PrimaryText.copy(alpha = 0.7f),
+        targetValue = if (tile.isCompleted) TextPrimary else TextPrimary.copy(alpha = 0.5f),
         animationSpec = spring(stiffness = Spring.StiffnessLow), 
         label = "contentColor"
     )
@@ -69,12 +67,12 @@ fun SavingsTileItem(
                 scaleX = scale
                 scaleY = scale
             }
-            .aspectRatio(1.15f) // Slightly shorter for a cleaner dashboard chip feel
+            .aspectRatio(1.15f)
             .shadow(
-                elevation = if (tile.isCompleted) 2.dp else 0.dp,
+                elevation = if (tile.isCompleted) 0.5.dp else 0.dp, // Minimal shadow for AMOLED
                 shape = RoundedCornerShape(16.dp),
-                spotColor = SuccessGreen.copy(alpha = 0.15f),
-                ambientColor = SuccessGreen.copy(alpha = 0.05f)
+                spotColor = MainProgressGreen.copy(alpha = 0.05f),
+                ambientColor = Color.Transparent
             )
             .clip(RoundedCornerShape(16.dp))
             .background(backgroundColor)

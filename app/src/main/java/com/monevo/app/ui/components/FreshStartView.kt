@@ -1,7 +1,5 @@
 package com.monevo.app.ui.components
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
@@ -15,7 +13,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
@@ -32,9 +29,9 @@ fun FreshStartView(
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
     val glowAlpha by infiniteTransition.animateFloat(
         initialValue = 0f,
-        targetValue = 0.25f, // Reduced intensity for restraint
+        targetValue = 0.15f, // Very restrained for AMOLED
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = EaseInOutSine),
+            animation = tween(4000, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
         ),
         label = "glowAlpha"
@@ -47,31 +44,30 @@ fun FreshStartView(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        // Ghost Progress Ring with Spark Icon
         Box(
             contentAlignment = Alignment.Center,
             modifier = Modifier.padding(bottom = 40.dp)
         ) {
             Canvas(modifier = Modifier.size(180.dp)) {
                 drawArc(
-                    color = DividerColor.copy(alpha = 0.4f),
+                    color = DividerStroke.copy(alpha = 0.3f),
                     startAngle = -90f,
                     sweepAngle = 360f,
                     useCenter = false,
-                    style = Stroke(width = 12.dp.toPx(), cap = StrokeCap.Round)
+                    style = Stroke(width = 10.dp.toPx(), cap = StrokeCap.Round)
                 )
             }
             
             Surface(
                 shape = CircleShape,
-                color = ElevatedCard,
+                color = SurfaceElevated,
                 modifier = Modifier.size(64.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(
                         imageVector = Icons.Outlined.AutoAwesome,
                         contentDescription = null,
-                        tint = SoftGold.copy(alpha = 0.8f),
+                        tint = SoftAccentPink.copy(alpha = 0.6f),
                         modifier = Modifier.size(28.dp)
                     )
                 }
@@ -82,7 +78,7 @@ fun FreshStartView(
             text = "Your journey starts here",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = PrimaryText,
+            color = TextPrimary,
             textAlign = TextAlign.Center
         )
 
@@ -91,7 +87,7 @@ fun FreshStartView(
         Text(
             text = "Small consistent steps lead to meaningful progress. Start with your first milestone.",
             style = MaterialTheme.typography.bodyMedium,
-            color = SecondaryText.copy(alpha = 0.8f),
+            color = TextSecondary.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,
             lineHeight = 22.sp
         )
@@ -99,14 +95,13 @@ fun FreshStartView(
         Spacer(modifier = Modifier.height(48.dp))
 
         Box(contentAlignment = Alignment.Center) {
-            // Subtle breathing glow behind CTA
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp)
                     .padding(horizontal = 2.dp)
                     .alpha(glowAlpha),
-                color = SoftGold,
+                color = SoftAccentPink,
                 shape = RoundedCornerShape(16.dp)
             ) {}
 
@@ -116,8 +111,8 @@ fun FreshStartView(
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = SoftGold,
-                    contentColor = Background
+                    containerColor = SoftAccentPink,
+                    contentColor = PrimaryBackground
                 ),
                 shape = RoundedCornerShape(16.dp),
                 elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)

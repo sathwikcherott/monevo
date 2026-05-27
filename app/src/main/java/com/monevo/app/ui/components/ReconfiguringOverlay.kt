@@ -9,7 +9,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -17,14 +16,13 @@ import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
 /**
- * Premium cinematic reconfiguration overlay.
- * Replaces generic loading with an intentional journey-building experience.
+ * Premium cinematic AMOLED reconfiguration overlay.
+ * Uses selective lighting in deep darkness.
  */
 @Composable
 fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
     val motionSettings = LocalMotionSettings.current
     
-    // Dynamic messaging based on goal
     val primaryMessage = remember(targetGoal) {
         when {
             targetGoal >= 100000 -> "Building Elite Journey"
@@ -39,13 +37,13 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
 
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = tween(motionSettings.scaleDuration(600))),
-        exit = fadeOut(animationSpec = tween(motionSettings.scaleDuration(1000)))
+        enter = fadeIn(animationSpec = tween(motionSettings.scaleDuration(800))),
+        exit = fadeOut(animationSpec = tween(motionSettings.scaleDuration(1200)))
     ) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(Color.Black)
+                .background(PrimaryBackground)
                 .padding(48.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -53,30 +51,23 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.Center
             ) {
-                // 1. Animated Percentage & Staged Pacing
                 var percentage by remember { mutableIntStateOf(0) }
                 
                 LaunchedEffect(isVisible) {
                     if (isVisible) {
                         percentage = 0
-                        // Stage 1: Initial sync (0-40%)
-                        animate(0f, 40f, animationSpec = tween(600, easing = LinearOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
-                        kotlinx.coroutines.delay(100)
-                        
-                        // Stage 2: Milestone generation (40-85%)
-                        animate(40f, 85f, animationSpec = tween(800, easing = FastOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
+                        animate(0f, 40f, animationSpec = tween(800, easing = LinearOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
                         kotlinx.coroutines.delay(150)
-                        
-                        // Stage 3: Final calibration (85-100%)
-                        animate(85f, 100f, animationSpec = tween(500, easing = LinearEasing)) { v, _ -> percentage = v.toInt() }
+                        animate(40f, 85f, animationSpec = tween(1000, easing = FastOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
+                        kotlinx.coroutines.delay(200)
+                        animate(85f, 100f, animationSpec = tween(600, easing = LinearEasing)) { v, _ -> percentage = v.toInt() }
                     }
                 }
 
-                // 2. Messaging
                 Text(
                     text = primaryMessage,
                     style = MaterialTheme.typography.headlineSmall,
-                    color = PrimaryText,
+                    color = TextPrimary,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
                 )
@@ -86,18 +77,18 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
                 Text(
                     text = secondaryMessage,
                     style = MaterialTheme.typography.labelMedium,
-                    color = SecondaryText.copy(alpha = 0.7f),
+                    color = TextSecondary.copy(alpha = 0.5f),
                     letterSpacing = 0.5.sp
                 )
 
-                Spacer(modifier = Modifier.height(56.dp))
+                Spacer(modifier = Modifier.height(64.dp))
 
-                // 3. Premium Loading Bar
+                // Premium Loading Bar
                 Box(
                     modifier = Modifier
                         .fillMaxWidth(if (motionSettings.isReducedMotionEnabled) 0.8f else 1f)
                         .height(2.dp)
-                        .background(ElevatedCard.copy(alpha = 0.3f))
+                        .background(DividerStroke.copy(alpha = 0.2f))
                 ) {
                     val widthScale by animateFloatAsState(
                         targetValue = percentage / 100f,
@@ -110,21 +101,20 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
                             .fillMaxWidth(widthScale)
                             .fillMaxHeight()
                             .shadow(
-                                elevation = if (motionSettings.isReducedMotionEnabled) 0.dp else 8.dp,
-                                spotColor = AccentGold,
-                                ambientColor = AccentGold
+                                elevation = if (motionSettings.isReducedMotionEnabled) 0.dp else 2.dp,
+                                spotColor = PrimaryAccentPink,
+                                ambientColor = androidx.compose.ui.graphics.Color.Transparent
                             )
-                            .background(AccentGold)
+                            .background(PrimaryAccentPink)
                     )
                 }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                // 4. Subtle Gold Counter
                 Text(
                     text = "$percentage%",
                     style = MaterialTheme.typography.titleMedium,
-                    color = SoftGold.copy(alpha = 0.9f),
+                    color = SoftAccentPink.copy(alpha = 0.7f),
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 2.sp
                 )

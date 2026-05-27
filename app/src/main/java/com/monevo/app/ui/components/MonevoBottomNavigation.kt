@@ -15,10 +15,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.monevo.app.ui.Screen
-import com.monevo.app.ui.theme.AccentGold
-import com.monevo.app.ui.theme.Background
-import com.monevo.app.ui.theme.ElevatedCard
-import com.monevo.app.ui.theme.SecondaryText
+import com.monevo.app.ui.theme.*
 
 @Composable
 fun MonevoBottomNavigation(
@@ -27,25 +24,23 @@ fun MonevoBottomNavigation(
     onNavigate: (Screen) -> Unit
 ) {
     NavigationBar(
-        containerColor = Background,
+        containerColor = PrimaryBackground,
         tonalElevation = 0.dp,
         modifier = Modifier
-            .height(84.dp) // Refined height for better vertical balance
+            .height(84.dp)
             .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
         screens.forEach { screen ->
             val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
             
-            // Interaction: Soft scale for active icon
             val iconScale by animateFloatAsState(
-                targetValue = if (isSelected) 1.1f else 1.0f,
-                animationSpec = spring(dampingRatio = 0.7f, stiffness = 400f),
+                targetValue = if (isSelected) 1.05f else 1.0f,
+                animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
                 label = "iconScale"
             )
 
-            // Interaction: Subtle opacity for labels
             val labelAlpha by animateFloatAsState(
-                targetValue = if (isSelected) 1f else 0.6f,
+                targetValue = if (isSelected) 1f else 0.5f,
                 animationSpec = spring(),
                 label = "labelAlpha"
             )
@@ -56,7 +51,7 @@ fun MonevoBottomNavigation(
                         imageVector = screen.icon, 
                         contentDescription = null,
                         modifier = Modifier
-                            .size(22.dp) // Optically balanced size
+                            .size(20.dp)
                             .scale(iconScale)
                     ) 
                 },
@@ -64,7 +59,7 @@ fun MonevoBottomNavigation(
                     Text(
                         text = screen.label,
                         style = MaterialTheme.typography.labelSmall.copy(
-                            fontSize = 11.sp,
+                            fontSize = 10.sp,
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             letterSpacing = 0.5.sp
                         ),
@@ -75,11 +70,11 @@ fun MonevoBottomNavigation(
                 onClick = { onNavigate(screen) },
                 alwaysShowLabel = true,
                 colors = NavigationBarItemDefaults.colors(
-                    selectedIconColor = AccentGold,
-                    selectedTextColor = AccentGold,
-                    unselectedIconColor = SecondaryText.copy(alpha = 0.5f),
-                    unselectedTextColor = SecondaryText.copy(alpha = 0.5f),
-                    indicatorColor = ElevatedCard.copy(alpha = 0.4f) // Soft tonal shift for active state
+                    selectedIconColor = PrimaryAccentPink,
+                    selectedTextColor = PrimaryAccentPink,
+                    unselectedIconColor = TextSecondary.copy(alpha = 0.4f),
+                    unselectedTextColor = TextSecondary.copy(alpha = 0.4f),
+                    indicatorColor = SurfaceElevated.copy(alpha = 0.3f)
                 )
             )
         }

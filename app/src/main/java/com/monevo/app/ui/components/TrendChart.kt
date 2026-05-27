@@ -26,7 +26,6 @@ fun TrendChart(
 ) {
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
     
-    // Determine current day index (0 for Mon, 6 for Sun)
     val currentDayIndex = remember {
         val calendar = Calendar.getInstance()
         when (calendar.get(Calendar.DAY_OF_WEEK)) {
@@ -45,8 +44,9 @@ fun TrendChart(
         modifier = modifier
             .fillMaxWidth()
             .height(200.dp),
-        colors = CardDefaults.cardColors(containerColor = PrimaryCard),
-        shape = RoundedCornerShape(24.dp)
+        colors = CardDefaults.cardColors(containerColor = SurfaceBase),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -56,7 +56,7 @@ fun TrendChart(
             Text(
                 text = "Weekly Momentum",
                 style = MaterialTheme.typography.labelSmall,
-                color = SecondaryText,
+                color = TextSecondary.copy(alpha = 0.5f),
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.5.sp
             )
@@ -64,7 +64,6 @@ fun TrendChart(
             Spacer(modifier = Modifier.height(24.dp))
             
             Column(modifier = Modifier.fillMaxSize()) {
-                // Bars Area
                 Row(
                     modifier = Modifier
                         .weight(1f)
@@ -79,12 +78,12 @@ fun TrendChart(
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .width(8.dp)
-                                    .fillMaxHeight(height.coerceIn(0.01f, 1f)) // Ensure tiny bar for visibility if > 0
+                                    .width(4.dp) // Extremely thin for premium AMOLED feel
+                                    .fillMaxHeight(height.coerceIn(0.01f, 1f))
                                     .clip(RoundedCornerShape(topStart = 4.dp, topEnd = 4.dp))
                                     .background(
-                                        if (index == currentDayIndex) AccentGold 
-                                        else SoftGold.copy(alpha = 0.1f + (height * 0.2f))
+                                        if (index == currentDayIndex) PrimaryAccentPink 
+                                        else TextMuted.copy(alpha = 0.15f + (height * 0.1f))
                                     )
                             )
                         }
@@ -93,17 +92,15 @@ fun TrendChart(
                 
                 Spacer(modifier = Modifier.height(12.dp))
                 
-                // Baseline
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(1.dp)
-                        .background(DividerColor.copy(alpha = 0.3f))
+                        .background(DividerStroke.copy(alpha = 0.3f))
                 )
                 
                 Spacer(modifier = Modifier.height(8.dp))
                 
-                // Labels Area
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly,
@@ -116,7 +113,7 @@ fun TrendChart(
                             style = MaterialTheme.typography.labelSmall,
                             fontSize = 9.sp,
                             textAlign = TextAlign.Center,
-                            color = if (index == currentDayIndex) PrimaryText else SecondaryText.copy(alpha = 0.3f)
+                            color = if (index == currentDayIndex) TextPrimary else TextMuted.copy(alpha = 0.6f)
                         )
                     }
                 }

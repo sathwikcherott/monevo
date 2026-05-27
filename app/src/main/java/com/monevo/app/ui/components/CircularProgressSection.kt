@@ -15,7 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
-import com.monevo.app.ui.atmosphere.getAdaptiveGold
+import com.monevo.app.ui.atmosphere.getAdaptiveAccent
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -28,19 +28,19 @@ fun CircularProgressSection(
     atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
     val motionSettings = LocalMotionSettings.current
-    val adaptiveGold = atmosphere.getAdaptiveGold()
+    val adaptiveAccent = atmosphere.getAdaptiveAccent()
     
     val infiniteTransition = rememberInfiniteTransition(label = "ringGlow")
     val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.04f,
+        initialValue = 0.015f,
         targetValue = if (isMomentumActive) {
-            motionSettings.scaleValue(0.10f, 0.05f) * atmosphere.glowIntensity
+            motionSettings.scaleValue(0.06f, 0.03f) * atmosphere.glowIntensity
         } else {
-            0.03f * atmosphere.glowIntensity
+            0.015f * atmosphere.glowIntensity
         },
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = motionSettings.scaleDuration(3000),
+                durationMillis = motionSettings.scaleDuration(5000), 
                 easing = EaseInOutSine
             ),
             repeatMode = RepeatMode.Reverse
@@ -51,51 +51,41 @@ fun CircularProgressSection(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            // Reduced top padding to move the ring slightly upward
             .padding(top = 12.dp, bottom = 32.dp),
         contentAlignment = Alignment.Center
     ) {
-        val strokeWidth = 16.dp
+        val strokeWidth = 10.dp // Elegant thin stroke for AMOLED
         val ringSize = 200.dp
         
         Canvas(modifier = Modifier.size(ringSize)) {
-            // Background Track - Consistent baseline
+            // Background Track
             drawArc(
-                color = DividerColor,
+                color = DividerStroke.copy(alpha = 0.5f),
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
                 style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
             )
             
-            // Highly diffused ambient glow (blended into active arc)
+            // Tight, almost invisible glow for AMOLED
             drawArc(
-                color = adaptiveGold.copy(alpha = pulseAlpha),
+                color = adaptiveAccent.copy(alpha = pulseAlpha),
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
-                style = Stroke(width = (strokeWidth + 16.dp).toPx(), cap = StrokeCap.Round)
-            )
-
-            drawArc(
-                color = adaptiveGold.copy(alpha = pulseAlpha * 2f),
-                startAngle = -90f,
-                sweepAngle = 360f * progress.coerceIn(0f, 1f),
-                useCenter = false,
-                style = Stroke(width = (strokeWidth + 8.dp).toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = (strokeWidth + 6.dp).toPx(), cap = StrokeCap.Round)
             )
             
-            // Active Progress Arc - Sized precisely to match track visually
+            // Active Progress Arc
             drawArc(
-                color = adaptiveGold,
+                color = adaptiveAccent,
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
-                style = Stroke(width = (strokeWidth - 0.5.dp).toPx(), cap = StrokeCap.Round)
+                style = Stroke(width = strokeWidth.toPx(), cap = StrokeCap.Round)
             )
         }
         
-        // Magnetized Center Content
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
@@ -104,14 +94,14 @@ fun CircularProgressSection(
                 text = "${(progress * 100).toInt()}%",
                 style = MaterialTheme.typography.displayMedium,
                 fontWeight = FontWeight.Bold,
-                color = PrimaryText,
+                color = TextPrimary,
                 letterSpacing = (-1).sp
             )
             
             Text(
                 text = "of target".uppercase(),
                 style = MaterialTheme.typography.labelSmall,
-                color = SecondaryText.copy(alpha = 0.6f),
+                color = TextSecondary.copy(alpha = 0.5f),
                 letterSpacing = 1.5.sp,
                 fontWeight = FontWeight.Bold
             )
@@ -122,7 +112,7 @@ fun CircularProgressSection(
                 text = "₹%,d saved".format(totalSaved),
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = adaptiveGold,
+                color = adaptiveAccent,
                 letterSpacing = (-0.5).sp
             )
         }

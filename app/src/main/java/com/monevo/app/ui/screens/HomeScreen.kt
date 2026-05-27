@@ -27,7 +27,7 @@ import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.CelebrationType
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.*
-import com.monevo.app.ui.theme.PrimaryText
+import com.monevo.app.ui.theme.TextPrimary
 import com.monevo.app.debug.DebugHapticController
 import com.monevo.app.ui.motion.LocalMotionSettings
 import kotlinx.coroutines.delay
@@ -45,23 +45,18 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
 
-    // Synchronize trigger state with ViewModel
     LaunchedEffect(viewModel.activeCelebration) {
         if (viewModel.activeCelebration != null) {
             celebrationTrigger = viewModel.activeCelebration
         }
     }
 
-    // Trigger sequenced celebration for final goal
-    // Uses a separate state to ensure the sequence finishes even if the dialog is dismissed early
     LaunchedEffect(celebrationTrigger) {
         val celebration = celebrationTrigger ?: return@LaunchedEffect
         
         if (celebration is CelebrationType.FinalGoal) {
-            // 1. Completion Pause / Recognition Moment
             delay(motionSettings.scaleDuration(400, 1.5f).toLong())
             
-            // 2. Premium Haptic Feedback
             if (viewModel.isHapticsEnabled) {
                 val duration = motionSettings.scaleDuration(200, 0.6f).toLong()
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -72,12 +67,10 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 DebugHapticController.onHapticExecuted(true)
             }
             
-            // 3. Progress Completion Pulse
             showRecognitionGlow = true
             delay(motionSettings.scaleDuration(800).toLong())
             showRecognitionGlow = false
             
-            // 4. Delayed Confetti Trigger (Always release)
             showConfetti = true
         } else if (celebration is CelebrationType.MilestoneReached) {
             val groupId = viewModel.groupedTiles.find { it.rangeEnd == celebration.amount }?.id
@@ -98,11 +91,9 @@ fun HomeScreen(viewModel: SavingsViewModel) {
             pulsingMilestoneId = null
         }
         
-        // Reset local trigger
         celebrationTrigger = null
     }
 
-    // Celebration Dialog
     viewModel.activeCelebration?.let { celebration ->
         CelebrationDialog(
             celebration = celebration,
@@ -133,7 +124,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 text = "Monevo",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = PrimaryText,
+                color = TextPrimary,
                 letterSpacing = (-0.5).sp
             )
 

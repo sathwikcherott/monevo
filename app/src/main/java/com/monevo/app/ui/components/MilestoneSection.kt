@@ -17,6 +17,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -24,7 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.model.SavingsTile
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
-import com.monevo.app.ui.atmosphere.getAdaptiveGold
+import com.monevo.app.ui.atmosphere.getAdaptiveAccent
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -40,7 +41,7 @@ fun MilestoneAccordionHeader(
 ) {
     val motionSettings = LocalMotionSettings.current
     val haptic = LocalHapticFeedback.current
-    val adaptiveGold = atmosphere.getAdaptiveGold()
+    val adaptiveAccent = atmosphere.getAdaptiveAccent()
 
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
@@ -52,7 +53,7 @@ fun MilestoneAccordionHeader(
     )
 
     val glowAlpha by animateFloatAsState(
-        targetValue = if (isGlowActive) motionSettings.scaleValue(0.5f, 0.2f) else 0f,
+        targetValue = if (isGlowActive) motionSettings.scaleValue(0.3f, 0.15f) else 0f,
         animationSpec = tween(
             durationMillis = motionSettings.scaleDuration(600), 
             easing = FastOutSlowInEasing
@@ -67,15 +68,16 @@ fun MilestoneAccordionHeader(
                 onClick()
             }
         },
-        color = PrimaryCard,
+        color = SurfaceBase,
         shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
-            .alpha(if (isLocked) 0.6f else 1f)
+            .alpha(if (isLocked) 0.5f else 1f)
             .shadow(
-                elevation = if (isGlowActive) motionSettings.scaleDp(8.dp, 2.dp) else 0.dp,
+                elevation = if (isGlowActive) motionSettings.scaleDp(4.dp, 1.dp) else 0.dp,
                 shape = RoundedCornerShape(20.dp),
-                spotColor = adaptiveGold.copy(alpha = glowAlpha)
+                spotColor = adaptiveAccent.copy(alpha = glowAlpha),
+                ambientColor = Color.Transparent
             )
     ) {
         Row(
@@ -89,7 +91,7 @@ fun MilestoneAccordionHeader(
                     Icon(
                         imageVector = Icons.Default.Lock,
                         contentDescription = "Locked",
-                        tint = SecondaryText,
+                        tint = TextSecondary,
                         modifier = Modifier.size(16.dp)
                     )
                     Spacer(modifier = Modifier.width(12.dp))
@@ -97,7 +99,7 @@ fun MilestoneAccordionHeader(
                 Text(
                     text = name,
                     style = MaterialTheme.typography.labelLarge,
-                    color = if (isExpanded) adaptiveGold else if (isLocked) SecondaryText else PrimaryText,
+                    color = if (isExpanded) adaptiveAccent else if (isLocked) TextSecondary else TextPrimary,
                     fontWeight = if (isExpanded) FontWeight.Bold else FontWeight.SemiBold,
                     letterSpacing = 0.5.sp
                 )
@@ -107,7 +109,7 @@ fun MilestoneAccordionHeader(
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
-                    tint = if (isExpanded) adaptiveGold else SecondaryText,
+                    tint = if (isExpanded) adaptiveAccent else TextSecondary,
                     modifier = Modifier.rotate(rotation)
                 )
             }
@@ -125,12 +127,12 @@ fun TileGrid(
     
     Column(
         modifier = modifier,
-        verticalArrangement = Arrangement.spacedBy(12.dp) // More breathable vertical rhythm
+        verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         rows.forEach { rowTiles ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp) // More breathable horizontal rhythm
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 rowTiles.forEach { tile ->
                     Box(modifier = Modifier.weight(1f)) {

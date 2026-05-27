@@ -1,7 +1,6 @@
 package com.monevo.app.ui.theme
 
 import android.app.Activity
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
@@ -11,23 +10,26 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
-    primary = AccentGold,
-    secondary = SoftGold,
-    tertiary = SuccessGreen,
-    background = Background,
-    surface = PrimaryCard,
-    onPrimary = Background,
-    onSecondary = Background,
-    onTertiary = Background,
-    onBackground = PrimaryText,
-    onSurface = PrimaryText,
-    surfaceVariant = ElevatedCard,
-    onSurfaceVariant = SecondaryText
+    primary = PrimaryAccentPink,
+    onPrimary = PrimaryBackground,
+    secondary = SoftAccentPink,
+    onSecondary = PrimaryBackground,
+    tertiary = MainProgressGreen,
+    onTertiary = PrimaryBackground,
+    background = PrimaryBackground,
+    onBackground = TextPrimary,
+    surface = SurfaceBase,
+    onSurface = TextPrimary,
+    surfaceVariant = SurfaceElevated,
+    onSurfaceVariant = TextSecondary,
+    outline = DividerStroke,
+    error = ErrorRose,
+    surfaceContainer = SurfaceModal
 )
 
 @Composable
 fun MonevoTheme(
-    darkTheme: Boolean = true, // Force dark theme as per requirements
+    darkTheme: Boolean = true, // Force premium AMOLED-first dark theme
     content: @Composable () -> Unit
 ) {
     val colorScheme = DarkColorScheme
@@ -36,7 +38,11 @@ fun MonevoTheme(
         SideEffect {
             val window = (view.context as Activity).window
             window.statusBarColor = colorScheme.background.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+            window.navigationBarColor = colorScheme.background.toArgb()
+            
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = false
+            controller.isAppearanceLightNavigationBars = false
         }
     }
 

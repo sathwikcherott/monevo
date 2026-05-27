@@ -9,7 +9,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
-import com.monevo.app.ui.atmosphere.getAdaptiveGold
+import com.monevo.app.ui.atmosphere.getAdaptiveAccent
 import com.monevo.app.ui.theme.*
 
 @Composable
@@ -20,12 +20,12 @@ fun AnalyticsCard(
     isHighlighted: Boolean = false,
     atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
-    val adaptiveGold = atmosphere.getAdaptiveGold()
+    val adaptiveAccent = atmosphere.getAdaptiveAccent()
     
     Card(
         modifier = modifier,
         colors = CardDefaults.cardColors(
-            containerColor = if (isHighlighted) ElevatedCard else PrimaryCard
+            containerColor = if (isHighlighted) SurfaceElevated else SurfaceBase
         ),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -38,7 +38,7 @@ fun AnalyticsCard(
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall,
-                color = SecondaryText.copy(alpha = 0.7f),
+                color = TextSecondary.copy(alpha = 0.6f),
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
@@ -49,7 +49,7 @@ fun AnalyticsCard(
                 text = value,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isHighlighted) adaptiveGold else PrimaryText,
+                color = if (isHighlighted) adaptiveAccent else TextPrimary,
                 letterSpacing = (-0.2).sp
             )
         }
