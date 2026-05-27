@@ -270,7 +270,9 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .graphicsLayer { alpha = bgAlpha }
+            .let { 
+                if (bgAlpha < 1f) it.graphicsLayer { alpha = bgAlpha } else it
+            }
             .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
@@ -369,11 +371,11 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                     Text(
                         text = percentageText,
                         style = MaterialTheme.typography.labelLarge,
-                        color = TextPrimary.copy(alpha = (ringRebuild * 0.9f).coerceIn(0f, 0.9f)),
+                        // Avoid graphicsLayer for simple text alpha
+                        color = TextPrimary.copy(alpha = (ringRebuild * 0.9f * textFadeAlpha).coerceIn(0f, 0.9f)),
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 1.sp,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.graphicsLayer { alpha = textFadeAlpha }
+                        textAlign = TextAlign.Center
                     )
                     
                     // Central Background Pulse
@@ -464,17 +466,11 @@ fun AmbientLoadingLine(isVisible: Boolean, progress: Float, isReducedMotion: Boo
             modifier = Modifier
                 .fillMaxWidth(progress.coerceIn(0.01f, 1f))
                 .height(1.dp)
-                .graphicsLayer {
-                    // Use graphicsLayer for subtle blur if not reduced motion
-                    if (!isReducedMotion) {
-                        alpha = 0.9f
-                    }
-                }
                 .background(
                     brush = Brush.horizontalGradient(
-                        0f to MainProgressGreen.copy(alpha = 0.2f),
-                        sweepOffset to MainProgressGreen,
-                        1f to MainProgressGreen.copy(alpha = 0.2f),
+                        0f to MainProgressGreen.copy(alpha = 0.18f), // Multiplied 0.9 * 0.2
+                        sweepOffset to MainProgressGreen.copy(alpha = 0.9f),
+                        1f to MainProgressGreen.copy(alpha = 0.18f),
                         startX = 0f,
                         endX = 1000f
                     )
@@ -514,7 +510,10 @@ fun AmbientParticle(index: Int, delayMillis: Int, animationTriggered: Boolean) {
         modifier = Modifier
             .offset(x = xPos - 120.dp, y = yPos - 200.dp + driftY.dp)
             .size(1.2.dp)
-            .graphicsLayer { this.alpha = if (animationTriggered) alpha else 0f }
-            .background(SoftAccentPink.copy(alpha = 0.3f), CircleShape)
+            // Combined alpha into background color to avoid graphicsLayer offscreen targets
+            .background(
+                SoftAccentPink.copy(alpha = if (animationTriggered) alpha * 0.3f else 0f), 
+                CircleShape
+            )
     )
 }

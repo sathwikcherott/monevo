@@ -149,13 +149,17 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     )
 
     Box(modifier = Modifier.fillMaxSize()) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .statusBarsPadding()
-                .padding(horizontal = 20.dp)
-                .graphicsLayer { alpha = contentAlpha }
-        ) {
+        val columnModifier = Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(horizontal = 20.dp)
+            .let { 
+                if (contentAlpha < 1f) {
+                    it.graphicsLayer { alpha = contentAlpha }
+                } else it
+            }
+
+        Column(modifier = columnModifier) {
             Spacer(modifier = Modifier.height(28.dp))
 
             Row(
@@ -316,14 +320,17 @@ fun CinematicEntrance(
         label = "entranceProgress"
     )
 
-    Box(
-        modifier = Modifier.graphicsLayer {
+    // Optimization: Avoid graphicsLayer once entrance is complete to reduce compositing overhead
+    val modifier = if (entranceProgress < 1f) {
+        Modifier.graphicsLayer {
             alpha = entranceProgress
             if (!isReducedMotion) {
                 translationY = (1f - entranceProgress) * 12.dp.toPx()
             }
         }
-    ) {
+    } else Modifier
+
+    Box(modifier = modifier) {
         content()
     }
 }

@@ -31,16 +31,18 @@ fun CircularProgressSection(
     val adaptiveAccent = atmosphere.getAdaptiveAccent()
     
     val infiniteTransition = rememberInfiniteTransition(label = "ringGlow")
+    
+    // Calmer pulse: slower duration and reduced intensity for better 120Hz stability
     val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.015f,
+        initialValue = 0.01f,
         targetValue = if (isMomentumActive) {
-            motionSettings.scaleValue(0.06f, 0.03f) * atmosphere.glowIntensity
+            motionSettings.scaleValue(0.04f, 0.02f) * atmosphere.glowIntensity
         } else {
-            0.015f * atmosphere.glowIntensity
+            0.01f * atmosphere.glowIntensity
         },
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = motionSettings.scaleDuration(5000), 
+                durationMillis = motionSettings.scaleDuration(6000),
                 easing = EaseInOutSine
             ),
             repeatMode = RepeatMode.Reverse

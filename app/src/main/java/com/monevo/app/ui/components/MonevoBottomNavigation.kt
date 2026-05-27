@@ -1,7 +1,8 @@
 package com.monevo.app.ui.components
 
+import androidx.compose.animation.core.EaseOutCubic
 import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -32,16 +33,11 @@ fun MonevoBottomNavigation(
         screens.forEach { screen ->
             val isSelected = currentDestination?.hierarchy?.any { it.route == screen.route } == true
             
+            // Restrained animations for everyday navigation to improve 120Hz stability
             val iconScale by animateFloatAsState(
                 targetValue = if (isSelected) 1.05f else 1.0f,
-                animationSpec = spring(dampingRatio = 0.8f, stiffness = 400f),
+                animationSpec = tween(300, easing = EaseOutCubic),
                 label = "iconScale"
-            )
-
-            val labelAlpha by animateFloatAsState(
-                targetValue = if (isSelected) 1f else 0.5f,
-                animationSpec = spring(),
-                label = "labelAlpha"
             )
 
             NavigationBarItem(
@@ -51,9 +47,13 @@ fun MonevoBottomNavigation(
                         contentDescription = null,
                         modifier = Modifier
                             .size(20.dp)
-                            .graphicsLayer {
-                                scaleX = iconScale
-                                scaleY = iconScale
+                            .let {
+                                if (iconScale != 1f) {
+                                    it.graphicsLayer {
+                                        scaleX = iconScale
+                                        scaleY = iconScale
+                                    }
+                                } else it
                             }
                     ) 
                 },
@@ -65,7 +65,8 @@ fun MonevoBottomNavigation(
                             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
                             letterSpacing = 0.5.sp
                         ),
-                        modifier = Modifier.graphicsLayer { alpha = labelAlpha }
+                        // Reduced alpha stacking: apply alpha only when not selected to reduce pressure
+                        color = if (isSelected) PrimaryAccentPink else TextSecondary.copy(alpha = 0.4f)
                     ) 
                 },
                 selected = isSelected,

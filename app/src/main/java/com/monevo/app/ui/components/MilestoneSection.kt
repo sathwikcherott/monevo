@@ -71,8 +71,9 @@ fun MilestoneAccordionHeader(
         shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer { alpha = containerAlpha }
-            // Reduced shadow complexity for 120Hz stability
+            .let { 
+                if (containerAlpha < 1f) it.graphicsLayer { alpha = containerAlpha } else it 
+            }
             .then(
                 if (isGlowActive) {
                     Modifier.shadow(
@@ -114,7 +115,9 @@ fun MilestoneAccordionHeader(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
                     tint = if (isExpanded) adaptiveAccent else TextSecondary,
-                    modifier = Modifier.graphicsLayer { rotationZ = rotation }
+                    modifier = Modifier.let {
+                        if (rotation != 0f) it.graphicsLayer { rotationZ = rotation } else it
+                    }
                 )
             }
         }
@@ -194,14 +197,17 @@ fun StaggeredEntranceWrapper(
         label = "entranceProgress"
     )
 
-    Box(
-        modifier = Modifier.graphicsLayer {
+    // Optimization: Avoid graphicsLayer once entrance is complete
+    val modifier = if (entranceProgress < 1f) {
+        Modifier.graphicsLayer {
             alpha = entranceProgress
             if (!isReducedMotion) {
                 translationY = (1f - entranceProgress) * 8.dp.toPx()
             }
         }
-    ) {
+    } else Modifier
+
+    Box(modifier = modifier) {
         content()
     }
 }

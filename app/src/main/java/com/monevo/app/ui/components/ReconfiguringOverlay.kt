@@ -8,7 +8,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -23,6 +22,9 @@ import com.monevo.app.ui.theme.*
 fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
     val motionSettings = LocalMotionSettings.current
     
+    // Memory-stable state
+    val targetGoalInK = remember(targetGoal) { targetGoal / 1000 }
+    
     val primaryMessage = remember(targetGoal) {
         when {
             targetGoal >= 100000 -> "Building Elite Journey"
@@ -31,14 +33,15 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
         }
     }
     
-    val secondaryMessage = remember(targetGoal) {
-        "Synchronizing your ₹${targetGoal / 1000}K progression"
+    val secondaryMessage = remember(targetGoalInK) {
+        "Synchronizing your ₹${targetGoalInK}K progression"
     }
 
+    // Optimization: Simplified transition to reduce offscreen rendering overhead
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = tween(motionSettings.scaleDuration(800))),
-        exit = fadeOut(animationSpec = tween(motionSettings.scaleDuration(1200)))
+        enter = fadeIn(animationSpec = tween(600)),
+        exit = fadeOut(animationSpec = tween(800))
     ) {
         Box(
             modifier = Modifier
@@ -100,11 +103,7 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
                         modifier = Modifier
                             .fillMaxWidth(widthScale)
                             .fillMaxHeight()
-                            .shadow(
-                                elevation = if (motionSettings.isReducedMotionEnabled) 0.dp else 2.dp,
-                                spotColor = PrimaryAccentPink,
-                                ambientColor = androidx.compose.ui.graphics.Color.Transparent
-                            )
+                            // Removed shadow to reduce compositing pressure during high-load reconfiguration
                             .background(PrimaryAccentPink)
                     )
                 }
