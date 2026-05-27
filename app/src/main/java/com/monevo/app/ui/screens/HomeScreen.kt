@@ -46,21 +46,32 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     var showFreshStartMessage by remember { mutableStateOf(false) }
     
     // Entrance animation state - initialize immediately to prevent flicker
-    var isEntering by remember { mutableStateOf(viewModel.isFreshStartArrival) }
+    // Reserved for App Launch and Reset Arrival only
+    var isEntering by remember { 
+        mutableStateOf(viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) 
+    }
     
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
 
-    // Handle Fresh Start Arrival
-    LaunchedEffect(viewModel.isFreshStartArrival) {
-        if (viewModel.isFreshStartArrival) {
+    // Handle Animation Lifecycle (App Launch & Fresh Start)
+    LaunchedEffect(viewModel.isFreshStartArrival, viewModel.isAppLaunchEntrance) {
+        if (viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) {
             isEntering = true
-            showFreshStartMessage = true
-            delay(3000)
-            showFreshStartMessage = false
-            viewModel.isFreshStartArrival = false
-            // Keep isEntering true for some time to allow animation to finish
-            delay(2000)
+            
+            if (viewModel.isFreshStartArrival) {
+                showFreshStartMessage = true
+                delay(3000)
+                showFreshStartMessage = false
+                viewModel.isFreshStartArrival = false
+            }
+            
+            // Clear app launch flag after first trigger
+            if (viewModel.isAppLaunchEntrance) {
+                delay(2000) // Ensure animation has enough time
+                viewModel.isAppLaunchEntrance = false
+            }
+
             isEntering = false
         }
     }

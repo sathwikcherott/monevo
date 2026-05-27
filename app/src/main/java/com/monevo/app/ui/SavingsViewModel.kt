@@ -40,6 +40,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         private set
 
     var isFreshStartArrival by mutableStateOf(false)
+    var isAppLaunchEntrance by mutableStateOf(true) // Initial launch animation
 
     private val shownCelebrationIds = mutableSetOf<String>()
     var activeCelebration by mutableStateOf<CelebrationType?>(null)

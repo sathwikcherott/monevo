@@ -61,7 +61,10 @@ fun MainScreen() {
                             val navBackStackEntry by navController.currentBackStackEntryAsState()
                             val currentDestination = navBackStackEntry?.destination
                             
-                            CinematicEntrance(index = 8, isTriggered = viewModel.isFreshStartArrival) {
+                            CinematicEntrance(
+                                index = 8, 
+                                isTriggered = viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance
+                            ) {
                                 MonevoBottomNavigation(
                                     screens = items,
                                     currentDestination = currentDestination,
