@@ -44,17 +44,24 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     var pulsingMilestoneId by remember { mutableStateOf<Int?>(null) }
     var celebrationTrigger by remember { mutableStateOf<CelebrationType?>(null) }
     var showFreshStartMessage by remember { mutableStateOf(false) }
-
+    
+    // Entrance animation state - initialize immediately to prevent flicker
+    var isEntering by remember { mutableStateOf(viewModel.isFreshStartArrival) }
+    
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
 
     // Handle Fresh Start Arrival
     LaunchedEffect(viewModel.isFreshStartArrival) {
         if (viewModel.isFreshStartArrival) {
+            isEntering = true
             showFreshStartMessage = true
             delay(3000)
             showFreshStartMessage = false
             viewModel.isFreshStartArrival = false
+            // Keep isEntering true for some time to allow animation to finish
+            delay(2000)
+            isEntering = false
         }
     }
 
@@ -163,15 +170,17 @@ fun HomeScreen(viewModel: SavingsViewModel) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            TotalSavedCard(
-                totalProvider = { viewModel.totalSaved },
-                progressProvider = { viewModel.progress },
-                completedCountProvider = { viewModel.tiles.count { it.isCompleted } },
-                totalCountProvider = { viewModel.tiles.size },
-                goalProvider = { viewModel.goalAmount },
-                isGlowActive = showRecognitionGlow,
-                atmosphere = viewModel.atmosphere
-            )
+            CinematicEntrance(index = 0, isTriggered = isEntering) {
+                TotalSavedCard(
+                    totalProvider = { viewModel.totalSaved },
+                    progressProvider = { viewModel.progress },
+                    completedCountProvider = { viewModel.tiles.count { it.isCompleted } },
+                    totalCountProvider = { viewModel.tiles.size },
+                    goalProvider = { viewModel.goalAmount },
+                    isGlowActive = showRecognitionGlow,
+                    atmosphere = viewModel.atmosphere
+                )
+            }
 
             Spacer(modifier = Modifier.height(24.dp))
 
@@ -184,18 +193,20 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                     val isExpanded = expandedSectionIndex == index && !group.isLocked
 
                     item(key = "header_${group.id}") {
-                        MilestoneAccordionHeader(
-                            name = group.name,
-                            isExpanded = isExpanded,
-                            isLocked = group.isLocked,
-                            isGlowActive = pulsingMilestoneId == group.id,
-                            atmosphere = viewModel.atmosphere,
-                            onClick = {
-                                if (!group.isLocked) {
-                                    expandedSectionIndex = if (isExpanded) -1 else index
+                        CinematicEntrance(index = index + 1, isTriggered = isEntering) {
+                            MilestoneAccordionHeader(
+                                name = group.name,
+                                isExpanded = isExpanded,
+                                isLocked = group.isLocked,
+                                isGlowActive = pulsingMilestoneId == group.id,
+                                atmosphere = viewModel.atmosphere,
+                                onClick = {
+                                    if (!group.isLocked) {
+                                        expandedSectionIndex = if (isExpanded) -1 else index
+                                    }
                                 }
-                            }
-                        )
+                            )
+                        }
                     }
 
                     item(key = "content_${group.id}") {
@@ -213,7 +224,9 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                             ) {
                                 TileGrid(
                                     tiles = group.tiles,
-                                    onTileClick = { viewModel.toggleTile(it) }
+                                    onTileClick = { viewModel.toggleTile(it) },
+                                    isEntering = isEntering,
+                                    baseStaggerIndex = (index + 2) * 5 // Offset for cinematic stagger
                                 )
                             }
                         }
@@ -227,5 +240,49 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 onAnimationEnd = { showConfetti = false }
             )
         }
+    }
+}
+
+/**
+ * Cinematic entrance animation for Home screen elements.
+ * Softly pans upward and fades in from darkness.
+ */
+@Composable
+fun CinematicEntrance(
+    index: Int,
+    isTriggered: Boolean,
+    content: @Composable () -> Unit
+) {
+    var hasTriggered by remember { mutableStateOf(false) }
+    var isVisible by remember { mutableStateOf(!isTriggered) }
+
+    LaunchedEffect(isTriggered) {
+        if (isTriggered && !hasTriggered) {
+            hasTriggered = true
+            isVisible = false
+            delay(100L + (index * 80L)) // Cinematic stagger
+            isVisible = true
+        }
+    }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(550, easing = EaseOutCubic),
+        label = "entranceAlpha"
+    )
+
+    val translateY by animateDpAsState(
+        targetValue = if (isVisible) 0.dp else 12.dp,
+        animationSpec = tween(550, easing = EaseOutCubic),
+        label = "entranceTranslateY"
+    )
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            this.alpha = alpha
+            this.translationY = translateY.toPx()
+        }
+    ) {
+        content()
     }
 }

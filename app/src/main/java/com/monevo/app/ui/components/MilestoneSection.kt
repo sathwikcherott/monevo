@@ -1,23 +1,20 @@
 package com.monevo.app.ui.components
 
-import androidx.compose.animation.core.FastOutSlowInEasing
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Lock
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +25,7 @@ import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import com.monevo.app.ui.atmosphere.getAdaptiveAccent
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
+import kotlinx.coroutines.delay
 
 @Composable
 fun MilestoneAccordionHeader(
@@ -74,7 +72,7 @@ fun MilestoneAccordionHeader(
             .fillMaxWidth()
             .alpha(if (isLocked) 0.5f else 1f)
             .shadow(
-                elevation = if (isGlowActive) motionSettings.scaleDp(4.dp, 1.dp) else 0.dp,
+                elevation = if (isGlowActive) motionSettings.scaleDp(1.dp, 1.dp) else 0.dp,
                 shape = RoundedCornerShape(20.dp),
                 spotColor = adaptiveAccent.copy(alpha = glowAlpha),
                 ambientColor = Color.Transparent
@@ -121,7 +119,9 @@ fun MilestoneAccordionHeader(
 fun TileGrid(
     tiles: List<SavingsTile>,
     onTileClick: (Int) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    isEntering: Boolean = false,
+    baseStaggerIndex: Int = 0
 ) {
     val rows = remember(tiles) { tiles.chunked(5) }
     
@@ -129,14 +129,20 @@ fun TileGrid(
         modifier = modifier,
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
-        rows.forEach { rowTiles ->
+        rows.forEachIndexed { rowIndex, rowTiles ->
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
-                rowTiles.forEach { tile ->
+                rowTiles.forEachIndexed { colIndex, tile ->
                     Box(modifier = Modifier.weight(1f)) {
-                        SavingsTileItem(tile = tile, onClick = { onTileClick(tile.id) })
+                        val staggerIndex = baseStaggerIndex + (rowIndex * 5) + colIndex
+                        StaggeredEntranceWrapper(
+                            index = staggerIndex,
+                            isTriggered = isEntering
+                        ) {
+                            SavingsTileItem(tile = tile, onClick = { onTileClick(tile.id) })
+                        }
                     }
                 }
                 if (rowTiles.size < 5) {
@@ -146,5 +152,48 @@ fun TileGrid(
                 }
             }
         }
+    }
+}
+
+/**
+ * Staggered entrance animation for individual tiles.
+ */
+@Composable
+fun StaggeredEntranceWrapper(
+    index: Int,
+    isTriggered: Boolean,
+    content: @Composable () -> Unit
+) {
+    var hasTriggered by remember { mutableStateOf(false) }
+    var isVisible by remember { mutableStateOf(!isTriggered) }
+
+    LaunchedEffect(isTriggered) {
+        if (isTriggered && !hasTriggered) {
+            hasTriggered = true
+            isVisible = false
+            delay(150L + (index * 40L)) // Tight cinematic stagger for many tiles
+            isVisible = true
+        }
+    }
+
+    val alpha by animateFloatAsState(
+        targetValue = if (isVisible) 1f else 0f,
+        animationSpec = tween(450, easing = EaseOutCubic),
+        label = "tileAlpha"
+    )
+
+    val translateY by animateDpAsState(
+        targetValue = if (isVisible) 0.dp else 10.dp,
+        animationSpec = tween(450, easing = EaseOutCubic),
+        label = "tileTranslateY"
+    )
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            this.alpha = alpha
+            this.translationY = translateY.toPx()
+        }
+    ) {
+        content()
     }
 }

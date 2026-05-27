@@ -29,6 +29,7 @@ import com.monevo.app.ui.screens.HomeScreen
 import com.monevo.app.ui.screens.OnboardingScreen
 import com.monevo.app.ui.screens.ProgressScreen
 import com.monevo.app.ui.screens.ProfileScreen
+import com.monevo.app.ui.screens.CinematicEntrance
 
 sealed class Screen(val route: String, val label: String, val icon: ImageVector) {
     object Home : Screen("home", "Home", Icons.Outlined.Home)
@@ -60,19 +61,21 @@ fun MainScreen() {
                             val navBackStackEntry by navController.currentBackStackEntryAsState()
                             val currentDestination = navBackStackEntry?.destination
                             
-                            MonevoBottomNavigation(
-                                screens = items,
-                                currentDestination = currentDestination,
-                                onNavigate = { screen ->
-                                    navController.navigate(screen.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
+                            CinematicEntrance(index = 8, isTriggered = viewModel.isFreshStartArrival) {
+                                MonevoBottomNavigation(
+                                    screens = items,
+                                    currentDestination = currentDestination,
+                                    onNavigate = { screen ->
+                                        navController.navigate(screen.route) {
+                                            popUpTo(navController.graph.findStartDestination().id) {
+                                                saveState = true
+                                            }
+                                            launchSingleTop = true
+                                            restoreState = true
                                         }
-                                        launchSingleTop = true
-                                        restoreState = true
                                     }
-                                }
-                            )
+                                )
+                            }
                         }
                     ) { innerPadding ->
                         NavHost(

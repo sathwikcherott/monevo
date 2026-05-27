@@ -389,10 +389,14 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                 AnimatedContent(
                     targetState = currentTextIndex,
                     transitionSpec = {
-                        (fadeIn(animationSpec = tween(1200, easing = EaseInOutSine)) + 
-                         slideInVertically(animationSpec = tween(1200, easing = EaseOutCubic)) { it / 4 }).togetherWith(
-                         fadeOut(animationSpec = tween(1000, easing = EaseInCubic)) + 
-                         slideOutVertically(animationSpec = tween(1000)) { -it / 4 })
+                        // Clean static crossfades only - no movement
+                        fadeIn(
+                            animationSpec = tween(durationMillis = 300, delayMillis = 100, easing = EaseInOutSine)
+                        ).togetherWith(
+                            fadeOut(
+                                animationSpec = tween(durationMillis = 200, easing = EaseInOutSine)
+                            )
+                        )
                     },
                     label = "cinematicText"
                 ) { index ->
