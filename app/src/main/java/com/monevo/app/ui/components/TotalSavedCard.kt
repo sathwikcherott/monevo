@@ -4,8 +4,7 @@ import androidx.compose.animation.core.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -32,12 +31,12 @@ fun TotalSavedCard(
     atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
     val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
     val progressValue = progressProvider()
     val isCompleted = progressValue >= 1f
 
     val adaptiveAccent = atmosphere.getAdaptiveAccent()
-    // Very subtle pulse for AMOLED
-    val basePulseIntensity = motionSettings.scaleValue(1.01f, 1.002f)
+    val basePulseIntensity = if (isReducedMotion) 1f else motionSettings.scaleValue(1.01f, 1.002f)
     val breathingTarget = 1f + (basePulseIntensity - 1f) * atmosphere.glowIntensity
 
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -46,7 +45,7 @@ fun TotalSavedCard(
         targetValue = if (isCompleted) basePulseIntensity else breathingTarget,
         animationSpec = infiniteRepeatable(
             animation = tween(
-                durationMillis = motionSettings.scaleDuration(3000), 
+                durationMillis = motionSettings.scaleDuration(if (isReducedMotion) 4000 else 3000), 
                 easing = EaseInOutSine
             ),
             repeatMode = RepeatMode.Reverse
@@ -73,8 +72,9 @@ fun TotalSavedCard(
         modifier = modifier
             .fillMaxWidth()
             .graphicsLayer {
-                scaleX = if (isGlowActive) recognitionScale else breathingScale
-                scaleY = if (isGlowActive) recognitionScale else breathingScale
+                val s = if (isGlowActive) recognitionScale else breathingScale
+                scaleX = s
+                scaleY = s
             }
             .shadow(
                 elevation = if (isGlowActive || isCompleted) motionSettings.scaleDp(2.dp, 0.5.dp) else 0.dp,
@@ -113,7 +113,7 @@ fun TotalSavedCard(
                 
                 Surface(
                     color = SurfaceElevated,
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
                         text = "${completedCountProvider()}/${totalCountProvider()}",
@@ -131,7 +131,7 @@ fun TotalSavedCard(
                 progress = { progressValue.coerceIn(0f, 1f) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(4.dp) // Thinner progress for AMOLED
+                    .height(4.dp)
                     .clip(RoundedCornerShape(2.dp)),
                 color = adaptiveAccent,
                 trackColor = DividerStroke.copy(alpha = 0.4f),

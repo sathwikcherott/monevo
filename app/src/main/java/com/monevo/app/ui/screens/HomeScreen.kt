@@ -17,7 +17,6 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -37,6 +36,8 @@ import kotlinx.coroutines.delay
 @Composable
 fun HomeScreen(viewModel: SavingsViewModel) {
     val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
+    
     val groupedTiles = viewModel.groupedTiles
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
     var showConfetti by remember { mutableStateOf(false) }
@@ -45,8 +46,6 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     var celebrationTrigger by remember { mutableStateOf<CelebrationType?>(null) }
     var showFreshStartMessage by remember { mutableStateOf(false) }
     
-    // Entrance animation state - initialize immediately to prevent flicker
-    // Reserved for App Launch and Reset Arrival only
     var isEntering by remember { 
         mutableStateOf(viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) 
     }
@@ -54,7 +53,6 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     val context = LocalContext.current
     val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
 
-    // Handle Animation Lifecycle (App Launch & Fresh Start)
     LaunchedEffect(viewModel.isFreshStartArrival, viewModel.isAppLaunchEntrance) {
         if (viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) {
             isEntering = true
@@ -66,12 +64,11 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 viewModel.isFreshStartArrival = false
             }
             
-            // Clear app launch flag after first trigger
             if (viewModel.isAppLaunchEntrance) {
-                delay(2000) // Ensure animation has enough time
+                delay(if (isReducedMotion) 500 else 2000)
                 viewModel.isAppLaunchEntrance = false
             }
-
+            
             isEntering = false
         }
     }
@@ -237,7 +234,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                                     tiles = group.tiles,
                                     onTileClick = { viewModel.toggleTile(it) },
                                     isEntering = isEntering,
-                                    baseStaggerIndex = (index + 2) * 5 // Offset for cinematic stagger
+                                    baseStaggerIndex = (index + 2) * 5
                                 )
                             }
                         }
@@ -254,16 +251,15 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     }
 }
 
-/**
- * Cinematic entrance animation for Home screen elements.
- * Softly pans upward and fades in from darkness.
- */
 @Composable
 fun CinematicEntrance(
     index: Int,
     isTriggered: Boolean,
     content: @Composable () -> Unit
 ) {
+    val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
+    
     var hasTriggered by remember { mutableStateOf(false) }
     var isVisible by remember { mutableStateOf(!isTriggered) }
 
@@ -271,19 +267,21 @@ fun CinematicEntrance(
         if (isTriggered && !hasTriggered) {
             hasTriggered = true
             isVisible = false
-            delay(100L + (index * 80L)) // Cinematic stagger
+            if (!isReducedMotion) {
+                delay(100L + (index * 80L))
+            }
             isVisible = true
         }
     }
 
     val alpha by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(550, easing = EaseOutCubic),
+        animationSpec = tween(if (isReducedMotion) 300 else 550, easing = EaseOutCubic),
         label = "entranceAlpha"
     )
 
     val translateY by animateDpAsState(
-        targetValue = if (isVisible) 0.dp else 12.dp,
+        targetValue = if (isVisible || isReducedMotion) 0.dp else 12.dp,
         animationSpec = tween(550, easing = EaseOutCubic),
         label = "entranceTranslateY"
     )

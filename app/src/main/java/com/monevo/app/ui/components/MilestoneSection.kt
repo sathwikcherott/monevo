@@ -10,8 +10,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
@@ -70,7 +68,7 @@ fun MilestoneAccordionHeader(
         shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
-            .alpha(if (isLocked) 0.5f else 1f)
+            .graphicsLayer { alpha = if (isLocked) 0.5f else 1f }
             .shadow(
                 elevation = if (isGlowActive) motionSettings.scaleDp(1.dp, 1.dp) else 0.dp,
                 shape = RoundedCornerShape(20.dp),
@@ -108,7 +106,7 @@ fun MilestoneAccordionHeader(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isExpanded) "Collapse" else "Expand",
                     tint = if (isExpanded) adaptiveAccent else TextSecondary,
-                    modifier = Modifier.rotate(rotation)
+                    modifier = Modifier.graphicsLayer { rotationZ = rotation }
                 )
             }
         }
@@ -155,15 +153,15 @@ fun TileGrid(
     }
 }
 
-/**
- * Staggered entrance animation for individual tiles.
- */
 @Composable
 fun StaggeredEntranceWrapper(
     index: Int,
     isTriggered: Boolean,
     content: @Composable () -> Unit
 ) {
+    val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
+    
     var hasTriggered by remember { mutableStateOf(false) }
     var isVisible by remember { mutableStateOf(!isTriggered) }
 
@@ -171,19 +169,21 @@ fun StaggeredEntranceWrapper(
         if (isTriggered && !hasTriggered) {
             hasTriggered = true
             isVisible = false
-            delay(150L + (index * 40L)) // Tight cinematic stagger for many tiles
+            if (!isReducedMotion) {
+                delay(150L + (index * 40L))
+            }
             isVisible = true
         }
     }
 
     val alpha by animateFloatAsState(
         targetValue = if (isVisible) 1f else 0f,
-        animationSpec = tween(450, easing = EaseOutCubic),
+        animationSpec = tween(if (isReducedMotion) 300 else 450, easing = EaseOutCubic),
         label = "tileAlpha"
     )
 
     val translateY by animateDpAsState(
-        targetValue = if (isVisible) 0.dp else 10.dp,
+        targetValue = if (isVisible || isReducedMotion) 0.dp else 10.dp,
         animationSpec = tween(450, easing = EaseOutCubic),
         label = "tileTranslateY"
     )

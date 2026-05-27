@@ -41,7 +41,7 @@ fun SavingsTileItem(
     val isPressed by interactionSource.collectIsPressedAsState()
     
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) 0.97f else 1f, // Subtler scale for AMOLED
+        targetValue = if (isPressed) 0.97f else 1f,
         animationSpec = spring(
             dampingRatio = Spring.DampingRatioLowBouncy,
             stiffness = Spring.StiffnessLow
@@ -69,7 +69,7 @@ fun SavingsTileItem(
             }
             .aspectRatio(1.15f)
             .shadow(
-                elevation = if (tile.isCompleted) 0.5.dp else 0.dp, // Minimal shadow for AMOLED
+                elevation = if (tile.isCompleted) 0.5.dp else 0.dp,
                 shape = RoundedCornerShape(16.dp),
                 spotColor = MainProgressGreen.copy(alpha = 0.05f),
                 ambientColor = Color.Transparent

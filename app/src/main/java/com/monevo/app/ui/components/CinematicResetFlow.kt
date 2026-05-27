@@ -21,6 +21,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
@@ -28,6 +29,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.theme.*
+import com.monevo.app.ui.motion.LocalMotionSettings
 import kotlinx.coroutines.delay
 
 /**
@@ -168,19 +170,22 @@ fun MonevoResetConfirmation(
 
 @Composable
 fun CinematicResetAnimation(onFinishStage: () -> Unit) {
+    val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
+    
     var animationTriggered by remember { mutableStateOf(false) }
     var currentTextIndex by remember { mutableIntStateOf(0) }
     
-    val messages = listOf(
-        "Closing your previous chapter...",
-        "Clearing distractions...",
-        "Preparing a fresh start...",
-        "Momentum begins again."
-    )
+    val messages = remember {
+        listOf(
+            "Closing your previous chapter...",
+            "Clearing distractions...",
+            "Preparing a fresh start...",
+            "Momentum begins again."
+        )
+    }
     
-    // Duration derived from text sequence pacing: 
-    // 600 (init) + 4 * 1800 (text) + 800 (final) = 8600ms total
-    val totalDuration = 8600
+    val totalDuration = if (isReducedMotion) 4000 else 8600
 
     val transition = updateTransition(targetState = animationTriggered, label = "resetPhases")
 
@@ -189,13 +194,12 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
         label = "bgAlpha"
     ) { if (it) 1f else 0f }
 
-    // Phase-specific ring evolution - Heavily weighted towards the end to prevent early "completion" feel
     val ringDissolve by transition.animateFloat(
         transitionSpec = { 
             keyframes {
                 durationMillis = totalDuration
                 1f at 0
-                0f at 1200 with FastOutSlowInEasing
+                0f at (totalDuration * 0.12).toInt() with FastOutSlowInEasing
                 0f at totalDuration
             }
         },
@@ -207,34 +211,32 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
             keyframes {
                 durationMillis = totalDuration
                 0f at 0
-                0.02f at 1200 // Almost nothing during first phrase
-                0.12f at 2400 // Minimal progress during second phrase
-                0.35f at 4500 // Still visibly incomplete at mid-sequence
-                0.65f at 6500 // Open gap during third phrase
-                0.90f at 8000 // Final stabilization stretch
-                1f at 8400 with FastOutSlowInEasing
+                0.02f at (totalDuration * 0.14).toInt()
+                0.12f at (totalDuration * 0.28).toInt()
+                0.35f at (totalDuration * 0.52).toInt()
+                0.65f at (totalDuration * 0.75).toInt()
+                0.90f at (totalDuration * 0.93).toInt()
+                1f at (totalDuration * 0.98).toInt() with FastOutSlowInEasing
                 1f at totalDuration
             }
         },
         label = "ringRebuild"
     ) { if (it) 1f else 0f }
 
-    // Subtle atmospheric motion that never stops
     val ringRotation by transition.animateFloat(
         transitionSpec = { tween(totalDuration, easing = LinearEasing) },
         label = "ringRotation"
     ) { if (it) 30f else 0f }
 
-    // Glow that evolves with the narrative stages
     val evolvingGlowAlpha by transition.animateFloat(
         transitionSpec = {
             keyframes {
                 durationMillis = totalDuration
                 0f at 0
-                0.02f at 2000
-                0.05f at 5000
-                0.08f at 8000 with EaseOutSine
-                0.04f at 8600 // Settles to a calm resting state
+                0.02f at (totalDuration * 0.23).toInt()
+                0.05f at (totalDuration * 0.58).toInt()
+                0.08f at (totalDuration * 0.93).toInt() with EaseOutSine
+                0.04f at totalDuration
             }
         },
         label = "evolvingGlow"
@@ -254,10 +256,11 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
         animationTriggered = true
         onFinishStage() 
         
+        val stepDelay = totalDuration / messages.size
         delay(600)
         for (i in messages.indices) {
             currentTextIndex = i
-            delay(1800)
+            delay(stepDelay.toLong())
         }
         
         delay(800)
@@ -267,7 +270,8 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = bgAlpha)),
+            .graphicsLayer { alpha = bgAlpha }
+            .background(Color.Black),
         contentAlignment = Alignment.Center
     ) {
         Box(
@@ -276,13 +280,15 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                 .padding(32.dp),
             contentAlignment = Alignment.Center
         ) {
-            // Layer 1: Ambient Context
-            repeat(12) { i ->
-                AmbientParticle(
-                    index = i, 
-                    delayMillis = i * 250,
-                    animationTriggered = animationTriggered
-                )
+            // Layer 1: Ambient Context (Skip if reduced motion)
+            if (!isReducedMotion) {
+                repeat(8) { i ->
+                    AmbientParticle(
+                        index = i, 
+                        delayMillis = i * 250,
+                        animationTriggered = animationTriggered
+                    )
+                }
             }
 
             Column(
@@ -294,25 +300,27 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                     modifier = Modifier.size(320.dp),
                     contentAlignment = Alignment.Center
                 ) {
-                    // Layer 2: Rotating Ring & Glow (Transforming Energy)
+                    // Layer 2: Rotating Ring & Glow
                     Box(
                         modifier = Modifier
                             .fillMaxSize()
-                            .rotate(ringRotation),
+                            .graphicsLayer { rotationZ = ringRotation },
                         contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(240.dp)
-                                .blur(40.dp)
-                                .alpha(evolvingGlowAlpha * 0.5f)
-                                .background(
-                                    brush = Brush.radialGradient(
-                                        colors = listOf(SoftAccentPink.copy(alpha = 0.3f), Color.Transparent)
-                                    ),
-                                    shape = CircleShape
-                                )
-                        )
+                        if (!isReducedMotion) {
+                            Box(
+                                modifier = Modifier
+                                    .size(240.dp)
+                                    .blur(if (isReducedMotion) 0.dp else 30.dp)
+                                    .graphicsLayer { alpha = evolvingGlowAlpha * 0.5f }
+                                    .background(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(SoftAccentPink.copy(alpha = 0.2f), Color.Transparent)
+                                        ),
+                                        shape = CircleShape
+                                    )
+                            )
+                        }
 
                         Canvas(modifier = Modifier.size(200.dp)) {
                             drawArc(
@@ -320,7 +328,7 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                                 startAngle = -90f,
                                 sweepAngle = 360f,
                                 useCenter = false,
-                                style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
+                                style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                             )
 
                             if (ringDissolve > 0.01f) {
@@ -329,25 +337,24 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                                     startAngle = -90f,
                                     sweepAngle = 360f * ringDissolve,
                                     useCenter = false,
-                                    style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
+                                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                                 )
                             }
 
                             if (ringRebuild > 0.01f) {
-                                // Subtly evolving opacity for reconstruction feel
                                 val reconstructionAlpha = 0.3f + (0.2f * ringRebuild)
                                 drawArc(
                                     color = SoftAccentPink.copy(alpha = reconstructionAlpha),
                                     startAngle = -90f,
                                     sweepAngle = 360f * ringRebuild,
                                     useCenter = false,
-                                    style = Stroke(width = 4.dp.toPx(), cap = StrokeCap.Round)
+                                    style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round)
                                 )
                             }
                         }
                     }
 
-                    // Layer 3: Static Center Text (Stable Core - No Ring Transforms)
+                    // Layer 3: Static Center Text
                     val percentageText = remember(ringRebuild) {
                         if (ringRebuild >= 0.99f) "Fresh Start"
                         else "${(ringRebuild * 100).toInt()}%"
@@ -366,21 +373,23 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                         fontWeight = FontWeight.Medium,
                         letterSpacing = 1.sp,
                         textAlign = TextAlign.Center,
-                        modifier = Modifier.alpha(textFadeAlpha)
+                        modifier = Modifier.graphicsLayer { alpha = textFadeAlpha }
                     )
                     
-                    // Central Background Pulse (Static)
-                    Box(
-                        modifier = Modifier
-                            .size(60.dp)
-                            .alpha(evolvingGlowAlpha * 0.8f)
-                            .background(
-                                brush = Brush.radialGradient(
-                                    colors = listOf(SoftAccentPink.copy(alpha = 0.2f), Color.Transparent)
-                                ),
-                                shape = CircleShape
-                            )
-                    )
+                    // Central Background Pulse
+                    if (!isReducedMotion) {
+                        Box(
+                            modifier = Modifier
+                                .size(60.dp)
+                                .graphicsLayer { alpha = evolvingGlowAlpha * 0.6f }
+                                .background(
+                                    brush = Brush.radialGradient(
+                                        colors = listOf(SoftAccentPink.copy(alpha = 0.15f), Color.Transparent)
+                                    ),
+                                    shape = CircleShape
+                                )
+                        )
+                    }
                 }
 
                 Spacer(modifier = Modifier.height(100.dp))
@@ -389,7 +398,6 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                 AnimatedContent(
                     targetState = currentTextIndex,
                     transitionSpec = {
-                        // Clean static crossfades only - no movement
                         fadeIn(
                             animationSpec = tween(durationMillis = 300, delayMillis = 100, easing = EaseInOutSine)
                         ).togetherWith(
@@ -416,7 +424,8 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                 // Ambient Loading Line
                 AmbientLoadingLine(
                     isVisible = animationTriggered,
-                    progress = fullTimelineProgress
+                    progress = fullTimelineProgress,
+                    isReducedMotion = isReducedMotion
                 )
             }
         }
@@ -424,34 +433,24 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
 }
 
 @Composable
-fun AmbientLoadingLine(isVisible: Boolean, progress: Float) {
+fun AmbientLoadingLine(isVisible: Boolean, progress: Float, isReducedMotion: Boolean) {
     val infiniteTransition = rememberInfiniteTransition(label = "lineFlow")
     
     val sweepOffset by infiniteTransition.animateFloat(
         initialValue = -1f,
         targetValue = 2f,
         animationSpec = infiniteRepeatable(
-            animation = tween(3000, easing = LinearEasing),
+            animation = tween(if (isReducedMotion) 6000 else 3000, easing = LinearEasing),
             repeatMode = RepeatMode.Restart
         ),
         label = "sweep"
-    )
-
-    val glowAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.1f,
-        targetValue = 0.3f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2500, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "glowAlpha"
     )
 
     Box(
         modifier = Modifier
             .width(180.dp)
             .height(1.dp)
-            .alpha(if (isVisible) 0.6f else 0f),
+            .graphicsLayer { alpha = if (isVisible) 0.6f else 0f },
         contentAlignment = Alignment.CenterStart
     ) {
         Box(
@@ -465,7 +464,12 @@ fun AmbientLoadingLine(isVisible: Boolean, progress: Float) {
             modifier = Modifier
                 .fillMaxWidth(progress.coerceIn(0.01f, 1f))
                 .height(1.dp)
-                .blur(1.dp)
+                .graphicsLayer {
+                    // Use graphicsLayer for subtle blur if not reduced motion
+                    if (!isReducedMotion) {
+                        alpha = 0.9f
+                    }
+                }
                 .background(
                     brush = Brush.horizontalGradient(
                         0f to MainProgressGreen.copy(alpha = 0.2f),
@@ -474,11 +478,6 @@ fun AmbientLoadingLine(isVisible: Boolean, progress: Float) {
                         startX = 0f,
                         endX = 1000f
                     )
-                )
-                .shadow(
-                    elevation = 4.dp,
-                    spotColor = MainProgressGreen.copy(alpha = glowAlpha),
-                    ambientColor = Color.Transparent
                 )
         )
     }
@@ -514,8 +513,8 @@ fun AmbientParticle(index: Int, delayMillis: Int, animationTriggered: Boolean) {
     Box(
         modifier = Modifier
             .offset(x = xPos - 120.dp, y = yPos - 200.dp + driftY.dp)
-            .size(1.5.dp)
-            .alpha(if (animationTriggered) alpha else 0f)
-            .background(SoftAccentPink.copy(alpha = 0.4f), CircleShape)
+            .size(1.2.dp)
+            .graphicsLayer { this.alpha = if (animationTriggered) alpha else 0f }
+            .background(SoftAccentPink.copy(alpha = 0.3f), CircleShape)
     )
 }
