@@ -68,6 +68,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     val goalAmount = remember { derivedStateOf { viewModel.goalAmount } }
     val atmosphere = remember { derivedStateOf { viewModel.atmosphere } }
     val journeyState = remember { derivedStateOf { viewModel.journeyState } }
+    val insightData = remember { derivedStateOf { viewModel.insightData } }
 
     LaunchedEffect(isEntranceActive) {
         if (isEntranceActive) {
@@ -198,16 +199,25 @@ fun HomeScreen(viewModel: SavingsViewModel) {
 
             // Architecture: Unified entrance for top card
             CinematicEntrance(index = 0, isTriggered = showTiles) {
-                TotalSavedCard(
-                    totalProvider = { totalSaved.value },
-                    progressProvider = { progress.value },
-                    completedCountProvider = { tilesCount.value },
-                    totalCountProvider = { tilesTotal.value },
-                    goalProvider = { goalAmount.value },
-                    atmosphereProvider = { atmosphere.value },
-                    journeyStateProvider = { journeyState.value },
-                    isGlowActive = showRecognitionGlow
-                )
+                Column {
+                    TotalSavedCard(
+                        totalProvider = { totalSaved.value },
+                        progressProvider = { progress.value },
+                        completedCountProvider = { tilesCount.value },
+                        totalCountProvider = { tilesTotal.value },
+                        goalProvider = { goalAmount.value },
+                        atmosphereProvider = { atmosphere.value },
+                        journeyStateProvider = { journeyState.value },
+                        isGlowActive = showRecognitionGlow
+                    )
+                    
+                    Spacer(modifier = Modifier.height(12.dp))
+                    
+                    CompactInsight(
+                        message = insightData.value.reflectionInsight,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
             }
 
             Spacer(modifier = Modifier.height(24.dp))

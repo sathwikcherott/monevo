@@ -29,6 +29,7 @@ fun ProgressScreen(
     val totalSavedProvider = { viewModel.totalSaved }
     val journeyStateProvider = { viewModel.journeyState }
     val reflectionProvider = { viewModel.currentReflection }
+    val insightDataProvider = { viewModel.insightData }
 
     Column(
         modifier = Modifier
@@ -121,6 +122,10 @@ fun ProgressScreen(
                 Spacer(modifier = Modifier.height(20.dp))
                 
                 TrendChart(heightsProvider = { viewModel.weeklyMomentum })
+
+                Spacer(modifier = Modifier.height(20.dp))
+
+                InsightsCard(insightDataProvider = insightDataProvider)
 
                 Spacer(modifier = Modifier.height(20.dp))
 

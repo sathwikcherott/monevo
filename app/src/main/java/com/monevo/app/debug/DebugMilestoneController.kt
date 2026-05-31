@@ -31,6 +31,7 @@ object DebugMilestoneController {
                 }
             }
         }
+        viewModel.debugRecalculate()
     }
 
     /**
@@ -56,6 +57,7 @@ object DebugMilestoneController {
                 }
             }
         }
+        viewModel.debugRecalculate()
     }
 
     /**
@@ -81,5 +83,6 @@ object DebugMilestoneController {
                 }
             }
         }
+        viewModel.debugRecalculate()
     }
 }

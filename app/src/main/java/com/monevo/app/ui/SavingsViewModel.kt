@@ -15,6 +15,8 @@ import com.monevo.app.data.MonevoDataStore
 import com.monevo.app.model.SavingsTile
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import com.monevo.app.ui.atmosphere.JourneyStateProvider
+import com.monevo.app.ui.insights.InsightData
+import com.monevo.app.ui.insights.InsightEngine
 import com.monevo.app.ui.reflection.MilestoneReflection
 import com.monevo.app.ui.reflection.MilestoneReflectionGenerator
 import kotlinx.coroutines.CoroutineExceptionHandler
@@ -100,6 +102,19 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     val totalTilesCount by derivedStateOf {
         tiles.size
+    }
+
+    val insightData by derivedStateOf {
+        InsightEngine.calculateInsights(
+            totalSaved = totalSaved,
+            goalAmount = goalAmount,
+            progress = progress,
+            daysTracked = daysTracked,
+            completedTilesCount = completedTilesCount,
+            milestonesCompleted = groupedTiles.count { it.isCompleted },
+            currentStreak = consistencyStats.streak,
+            completionTimestamps = tiles.filter { it.isCompleted && it.completedAt != null }.map { it.completedAt!! }
+        )
     }
 
     // --- INTEGRITY HELPERS ---
@@ -322,36 +337,46 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         
         updateGoalJob?.cancel()
         updateGoalJob = viewModelScope.launch(exceptionHandler) {
-            isReconfiguring = true
-            reconfiguringGoal = validatedGoal
-            val currentSaved = totalSaved
-            
-            // Save to DataStore
-            dataStore.saveGoalAmount(validatedGoal)
-            
-            // Cinematic delay for recalibration orchestration
-            kotlinx.coroutines.delay(2000)
-            
-            goalAmount = validatedGoal
-            
-            // Regenerate tiles based on new goal
-            val newTiles = generateTiles(validatedGoal)
-            tiles.clear()
-            tiles.addAll(newTiles)
-            
-            // Restore progress as closely as possible
-            var restoredAmount = 0
-            tiles.forEachIndexed { index, tile ->
-                if (restoredAmount + tile.amount <= currentSaved) {
-                    tiles[index] = tile.copy(isCompleted = true, completedAt = System.currentTimeMillis())
-                    restoredAmount += tile.amount
+            try {
+                isReconfiguring = true
+                reconfiguringGoal = validatedGoal
+                val currentSaved = totalSaved
+                
+                // Save to DataStore
+                dataStore.saveGoalAmount(validatedGoal)
+                
+                // Cinematic delay for recalibration orchestration
+                kotlinx.coroutines.delay(2000)
+                
+                goalAmount = validatedGoal
+                
+                // Regenerate tiles based on new goal
+                val newTiles = generateTiles(validatedGoal)
+                tiles.clear()
+                tiles.addAll(newTiles)
+                
+                // Restore progress as closely as possible
+                var restoredAmount = 0
+                tiles.forEachIndexed { index, tile ->
+                    if (restoredAmount + tile.amount <= currentSaved) {
+                        tiles[index] = tile.copy(isCompleted = true, completedAt = System.currentTimeMillis())
+                        restoredAmount += tile.amount
+                    }
                 }
+                
+                recalculateProgress()
+                saveState()
+            } finally {
+                isReconfiguring = false
             }
-            
-            recalculateProgress()
-            saveState()
-            isReconfiguring = false
         }
+    }
+
+    /**
+     * [DEBUG ONLY] Manually trigger progress recalculation.
+     */
+    fun debugRecalculate() {
+        recalculateProgress()
     }
 
     fun toggleTile(id: Int) {

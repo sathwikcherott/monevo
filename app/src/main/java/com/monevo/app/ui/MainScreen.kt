@@ -4,6 +4,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import com.monevo.app.debug.DebugHapticInterceptor
 import com.monevo.app.debug.DebugMilestoneOverlay
@@ -43,18 +44,18 @@ fun MainScreen() {
     val viewModel: SavingsViewModel = viewModel()
     
     ProvideMotionSettings(isReducedMotionEnabled = viewModel.isReducedMotionEnabled) {
-        if (!viewModel.isOnboardingCompleted) {
-            DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
-                OnboardingScreen(onFinish = { viewModel.completeOnboarding() })
-            }
-        } else {
-            val items = listOf(
-                Screen.Home,
-                Screen.Progress,
-                Screen.Profile
-            )
+        Box(modifier = Modifier.fillMaxSize()) {
+            if (!viewModel.isOnboardingCompleted) {
+                DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
+                    OnboardingScreen(onFinish = { viewModel.completeOnboarding() })
+                }
+            } else {
+                val items = listOf(
+                    Screen.Home,
+                    Screen.Progress,
+                    Screen.Profile
+                )
 
-            Box {
                 DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
                     Scaffold(
                         bottomBar = {
@@ -132,16 +133,16 @@ fun MainScreen() {
                         }
                     }
                 }
-
-                // [DEBUG] Milestone progression tester - REMOVE FOR PRODUCTION
-                DebugMilestoneOverlay(viewModel)
-
-                // Goal reconfiguration overlay
-                ReconfiguringOverlay(
-                    isVisible = viewModel.isReconfiguring,
-                    targetGoal = viewModel.reconfiguringGoal
-                )
             }
+
+            // [DEBUG] Milestone progression tester - Always mounted to support developer testing
+            DebugMilestoneOverlay(viewModel)
+
+            // Goal reconfiguration overlay - Highest priority layer
+            ReconfiguringOverlay(
+                isVisible = viewModel.isReconfiguring,
+                targetGoal = viewModel.reconfiguringGoal
+            )
         }
     }
 }
