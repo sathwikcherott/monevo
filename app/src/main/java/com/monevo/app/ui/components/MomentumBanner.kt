@@ -30,6 +30,8 @@ import com.monevo.app.ui.theme.*
 
 @Composable
 fun MomentumBanner(
+    title: String,
+    message: String,
     modifier: Modifier = Modifier
 ) {
     val motionSettings = LocalMotionSettings.current
@@ -80,13 +82,13 @@ fun MomentumBanner(
             
             Column {
                 Text(
-                    text = "Momentum is building",
+                    text = title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
                     color = PrimaryText
                 )
                 Text(
-                    text = "Small progress compounds over time.",
+                    text = message,
                     style = MaterialTheme.typography.labelSmall,
                     color = SecondaryText.copy(alpha = 0.7f),
                     letterSpacing = 0.2.sp

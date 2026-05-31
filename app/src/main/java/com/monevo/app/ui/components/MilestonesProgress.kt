@@ -31,6 +31,9 @@ fun MilestonesProgress(
     val goalAmount = goalAmountProvider()
     val atmosphere = atmosphereProvider()
     val adaptiveGold = atmosphere.getAdaptiveGold()
+    
+    val isCompleted = totalSaved >= goalAmount
+
     val milestones = remember(goalAmount) {
         val step = goalAmount / 5
         List(6) { index ->
@@ -64,15 +67,22 @@ fun MilestonesProgress(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "Milestone Path",
+                    text = if (isCompleted) "Journey Map" else "Milestone Path",
                     style = MaterialTheme.typography.labelSmall,
                     color = SecondaryText,
                     fontWeight = FontWeight.Medium
                 )
                 
-                if (totalSaved < milestones.last().amount) {
+                if (!isCompleted) {
                     Text(
                         text = "₹%,d left to ${currentTarget.label}".format(currentTarget.amount - totalSaved),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = adaptiveGold,
+                        fontWeight = FontWeight.Bold
+                    )
+                } else {
+                    Text(
+                        text = "Full Goal Reached",
                         style = MaterialTheme.typography.labelSmall,
                         color = adaptiveGold,
                         fontWeight = FontWeight.Bold

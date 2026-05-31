@@ -23,11 +23,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.monevo.app.ui.CelebrationType
+import com.monevo.app.ui.reflection.MilestoneReflection
 import com.monevo.app.ui.theme.*
 
 @Composable
 fun CelebrationDialog(
     celebration: CelebrationType,
+    reflection: MilestoneReflection,
     onDismiss: () -> Unit
 ) {
     val isFinal = celebration is CelebrationType.FinalGoal
@@ -87,10 +89,7 @@ fun CelebrationDialog(
 
                 // Body
                 Text(
-                    text = when (celebration) {
-                        is CelebrationType.MilestoneReached -> "You’ve officially crossed ₹${celebration.amount / 1000}K saved. Consistency is paying off."
-                        is CelebrationType.FinalGoal -> "You stayed consistent and completed your full savings journey. This wasn’t luck. This was discipline. You turned small steps into a major milestone."
-                    },
+                    text = reflection.message,
                     style = MaterialTheme.typography.bodyMedium,
                     color = SecondaryText,
                     textAlign = TextAlign.Center,

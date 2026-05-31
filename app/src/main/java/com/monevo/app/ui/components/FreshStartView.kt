@@ -18,6 +18,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.monevo.app.ui.atmosphere.JourneyStateProvider
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -28,6 +29,7 @@ fun FreshStartView(
 ) {
     val motionSettings = LocalMotionSettings.current
     val isReducedMotion = motionSettings.isReducedMotionEnabled
+    val journeyState = JourneyStateProvider.FreshStart
     
     val infiniteTransition = rememberInfiniteTransition(label = "breathing")
     val glowAlpha by if (isReducedMotion) {
@@ -82,7 +84,7 @@ fun FreshStartView(
         }
 
         Text(
-            text = "Your journey starts here",
+            text = journeyState.title,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
             color = TextPrimary,
@@ -92,7 +94,7 @@ fun FreshStartView(
         Spacer(modifier = Modifier.height(12.dp))
 
         Text(
-            text = "Small consistent steps lead to meaningful progress. Start with your first milestone.",
+            text = journeyState.message,
             style = MaterialTheme.typography.bodyMedium,
             color = TextSecondary.copy(alpha = 0.7f),
             textAlign = TextAlign.Center,

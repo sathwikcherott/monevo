@@ -15,6 +15,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import com.monevo.app.ui.atmosphere.JourneyState
 import com.monevo.app.ui.atmosphere.getAdaptiveAccent
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
@@ -27,6 +28,7 @@ fun TotalSavedCard(
     totalCountProvider: () -> Int,
     goalProvider: () -> Int,
     atmosphereProvider: () -> JourneyAtmosphere,
+    journeyStateProvider: () -> JourneyState,
     modifier: Modifier = Modifier,
     isGlowActive: Boolean = false,
 ) {
@@ -35,6 +37,7 @@ fun TotalSavedCard(
     val isCompleted = progressValue >= 1f
 
     val atmosphere = atmosphereProvider()
+    val journeyState = journeyStateProvider()
     val adaptiveAccent = atmosphere.getAdaptiveAccent()
     
     // Removed infinite breathing animation to reduce rendering overhead and visual busyness
@@ -84,12 +87,13 @@ fun TotalSavedCard(
             ) {
                 Column {
                     Text(
-                        text = "Total Saved",
+                        text = journeyState.title.uppercase(),
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary.copy(alpha = 0.6f),
+                        color = adaptiveAccent.copy(alpha = 0.8f),
                         letterSpacing = 1.sp,
                         fontWeight = FontWeight.Bold
                     )
+                    Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = "₹${totalProvider()}",
                         style = MaterialTheme.typography.headlineLarge,
@@ -113,6 +117,15 @@ fun TotalSavedCard(
                 }
             }
             
+            Spacer(modifier = Modifier.height(16.dp))
+
+            Text(
+                text = journeyState.message,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary.copy(alpha = 0.7f),
+                lineHeight = 18.sp
+            )
+
             Spacer(modifier = Modifier.height(16.dp))
             
             LinearProgressIndicator(

@@ -13,6 +13,7 @@ import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.PrimaryText
+import com.monevo.app.ui.theme.TextSecondary
 
 @Composable
 fun ProgressScreen(
@@ -26,6 +27,8 @@ fun ProgressScreen(
     val progressProvider = { viewModel.progress }
     val atmosphereProvider = { viewModel.atmosphere }
     val totalSavedProvider = { viewModel.totalSaved }
+    val journeyStateProvider = { viewModel.journeyState }
+    val reflectionProvider = { viewModel.currentReflection }
 
     Column(
         modifier = Modifier
@@ -46,14 +49,19 @@ fun ProgressScreen(
         if (isFreshStart) {
             FreshStartView(onBeginSaving = onNavigateHome)
         } else {
+            val journeyState = journeyStateProvider()
+            
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                // Momentum building is now percentage-based (2% to 30% of journey)
-                if (progressProvider() in 0.02f..0.3f) {
-                    MomentumBanner()
+                // Adaptive banner for different journey stages
+                if (progressProvider() < 1f) {
+                    MomentumBanner(
+                        title = journeyState.title,
+                        message = journeyState.message
+                    )
                     Spacer(modifier = Modifier.height(8.dp))
                 } else {
                     Spacer(modifier = Modifier.height(20.dp))
@@ -62,10 +70,32 @@ fun ProgressScreen(
                 CircularProgressSection(
                     progressProvider = progressProvider,
                     totalSavedProvider = totalSavedProvider,
-                    isMomentumActive = progressProvider() in 0.02f..0.3f,
+                    isMomentumActive = progressProvider() in 0.01f..0.25f,
                     atmosphereProvider = atmosphereProvider
                 )
                 
+                Column(modifier = Modifier.padding(horizontal = 4.dp, vertical = 8.dp)) {
+                    Text(
+                        text = if (progressProvider() >= 1f) "Mission Accomplished" else "Current Stage",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary.copy(alpha = 0.5f),
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Text(
+                        text = journeyState.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryText
+                    )
+                    Text(
+                        text = journeyState.message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary.copy(alpha = 0.7f),
+                        lineHeight = 22.sp
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(24.dp))
                 
                 Row(
@@ -99,6 +129,35 @@ fun ProgressScreen(
                     goalAmountProvider = { viewModel.goalAmount },
                     atmosphereProvider = atmosphereProvider
                 )
+
+                val reflection = reflectionProvider()
+                Column(
+                    modifier = Modifier
+                        .padding(top = 24.dp, bottom = 8.dp, start = 4.dp, end = 4.dp)
+                        .fillMaxWidth()
+                ) {
+                    Text(
+                        text = "Reflections",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondary.copy(alpha = 0.5f),
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = 1.sp
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = reflection.title,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = PrimaryText
+                    )
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = reflection.message,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary.copy(alpha = 0.7f),
+                        lineHeight = 22.sp
+                    )
+                }
 
                 Spacer(modifier = Modifier.height(20.dp))
 

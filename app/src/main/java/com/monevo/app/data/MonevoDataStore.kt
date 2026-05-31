@@ -19,6 +19,19 @@ class MonevoDataStore(private val context: Context) {
         private val GOAL_AMOUNT_KEY = intPreferencesKey("goal_amount")
         private val HAPTICS_ENABLED_KEY = booleanPreferencesKey("haptics_enabled")
         private val REDUCED_MOTION_KEY = booleanPreferencesKey("reduced_motion")
+        private val JOURNEY_START_DATE_KEY = longPreferencesKey("journey_start_date")
+    }
+
+    val journeyStartDate: Flow<Long?> = context.dataStore.data.map { preferences ->
+        preferences[JOURNEY_START_DATE_KEY]
+    }
+
+    suspend fun saveJourneyStartDate(timestamp: Long) {
+        context.dataStore.edit { preferences ->
+            if (preferences[JOURNEY_START_DATE_KEY] == null) {
+                preferences[JOURNEY_START_DATE_KEY] = timestamp
+            }
+        }
     }
 
     val completedTilesData: Flow<Map<Int, Long>> = context.dataStore.data.map { preferences ->

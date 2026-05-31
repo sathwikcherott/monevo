@@ -14,6 +14,9 @@ import com.monevo.app.config.MonevoConfig
 import com.monevo.app.data.MonevoDataStore
 import com.monevo.app.model.SavingsTile
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import com.monevo.app.ui.atmosphere.JourneyStateProvider
+import com.monevo.app.ui.reflection.MilestoneReflection
+import com.monevo.app.ui.reflection.MilestoneReflectionGenerator
 import kotlinx.coroutines.CoroutineExceptionHandler
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
@@ -61,6 +64,23 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     var activeCelebration by mutableStateOf<CelebrationType?>(null)
         private set
 
+    private var journeyStartDate by mutableStateOf<Long?>(null)
+
+    val daysTracked by derivedStateOf {
+        val start = journeyStartDate ?: return@derivedStateOf 1
+        val diff = System.currentTimeMillis() - start
+        (TimeUnit.MILLISECONDS.toDays(diff).toInt() + 1).coerceAtLeast(1)
+    }
+
+    val currentReflection by derivedStateOf {
+        MilestoneReflectionGenerator.generateMilestoneReflection(
+            progress = progress,
+            daysTracked = daysTracked,
+            depositsCount = completedTilesCount,
+            milestonesCompleted = groupedTiles.count { it.isCompleted }
+        )
+    }
+
     var totalSaved by mutableIntStateOf(0)
         private set
 
@@ -72,6 +92,10 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     val atmosphere by derivedStateOf {
         JourneyAtmosphere.fromProgress(progress)
+    }
+
+    val journeyState by derivedStateOf {
+        JourneyStateProvider.getJourneyState(progress)
     }
 
     val totalTilesCount by derivedStateOf {
@@ -101,6 +125,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     private fun loadSafeDefaults() {
         goalAmount = MonevoConfig.DEFAULT_SAVINGS_GOAL
+        journeyStartDate = System.currentTimeMillis()
         tiles.clear()
         tiles.addAll(generateTiles(goalAmount))
         recalculateProgress()
@@ -256,6 +281,15 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                 val savedGoal = dataStore.goalAmount.first() ?: MonevoConfig.DEFAULT_SAVINGS_GOAL
                 goalAmount = validateGoal(savedGoal)
                 
+                val savedStartDate = dataStore.journeyStartDate.first()
+                if (savedStartDate == null) {
+                    val now = System.currentTimeMillis()
+                    journeyStartDate = now
+                    dataStore.saveJourneyStartDate(now)
+                } else {
+                    journeyStartDate = savedStartDate
+                }
+
                 tiles.addAll(generateTiles(goalAmount))
 
                 val savedTilesData = dataStore.completedTilesData.first()
@@ -402,6 +436,8 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             shownCelebrationIds.clear()
             activeCelebration = null
             isFreshStartArrival = true
+            journeyStartDate = System.currentTimeMillis()
+            dataStore.saveJourneyStartDate(journeyStartDate!!)
             recalculateProgress()
         }
     }

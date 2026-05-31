@@ -29,29 +29,22 @@ sealed class JourneyAtmosphere(
     )
 
     object FindingConsistency : JourneyAtmosphere(
-        title = "Finding Consistency",
-        supportingText = "Your savings rhythm is taking shape.",
+        title = "Midway Journey",
+        supportingText = "Consistency is shaping the outcome.",
         glowIntensity = 0.25f,
         accentWarmth = 0.65f
     )
 
-    object StrongProgress : JourneyAtmosphere(
-        title = "Strong Progress",
-        supportingText = "Your discipline is becoming visible.",
-        glowIntensity = 0.35f,
-        accentWarmth = 0.8f
-    )
-
     object FinalStretch : JourneyAtmosphere(
-        title = "Final Stretch",
-        supportingText = "The goal is now within reach.",
+        title = "Almost There",
+        supportingText = "The finish line is getting closer.",
         glowIntensity = 0.45f,
         accentWarmth = 0.9f
     )
 
     object JourneyComplete : JourneyAtmosphere(
-        title = "Journey Complete",
-        supportingText = "A disciplined journey completed.",
+        title = "Goal Achieved",
+        supportingText = "A goal completed through discipline.",
         glowIntensity = 0.6f, // Capped to avoid excessive bloom on AMOLED
         accentWarmth = 1.0f
     )
@@ -60,9 +53,8 @@ sealed class JourneyAtmosphere(
         fun fromProgress(progress: Float): JourneyAtmosphere {
             return when {
                 progress >= 1f -> JourneyComplete
-                progress >= 0.85f -> FinalStretch
-                progress >= 0.60f -> StrongProgress
-                progress >= 0.30f -> FindingConsistency
+                progress >= 0.75f -> FinalStretch
+                progress >= 0.25f -> FindingConsistency
                 progress > 0f -> BuildingMomentum
                 else -> FreshStart
             }

@@ -67,6 +67,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     val tilesTotal = remember { derivedStateOf { viewModel.totalTilesCount } }
     val goalAmount = remember { derivedStateOf { viewModel.goalAmount } }
     val atmosphere = remember { derivedStateOf { viewModel.atmosphere } }
+    val journeyState = remember { derivedStateOf { viewModel.journeyState } }
 
     LaunchedEffect(isEntranceActive) {
         if (isEntranceActive) {
@@ -137,6 +138,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     viewModel.activeCelebration?.let { celebration ->
         CelebrationDialog(
             celebration = celebration,
+            reflection = viewModel.currentReflection,
             onDismiss = { viewModel.dismissCelebration() }
         )
     }
@@ -203,6 +205,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                     totalCountProvider = { tilesTotal.value },
                     goalProvider = { goalAmount.value },
                     atmosphereProvider = { atmosphere.value },
+                    journeyStateProvider = { journeyState.value },
                     isGlowActive = showRecognitionGlow
                 )
             }
