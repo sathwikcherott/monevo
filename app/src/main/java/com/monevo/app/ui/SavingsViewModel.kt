@@ -3,6 +3,7 @@ package com.monevo.app.ui
 import android.app.Application
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -13,6 +14,8 @@ import com.monevo.app.config.MonevoConfig
 import com.monevo.app.data.MonevoDataStore
 import com.monevo.app.model.SavingsTile
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import kotlinx.coroutines.CoroutineExceptionHandler
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import java.util.*
@@ -22,6 +25,18 @@ import kotlin.random.Random
 class SavingsViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStore = MonevoDataStore(application)
     
+    private val exceptionHandler = CoroutineExceptionHandler { _, throwable ->
+        // Log safely - in production use a real logging utility
+        println("Monevo Integrity Error: ${throwable.localizedMessage}")
+    }
+
+    private var updateGoalJob: Job? = null
+
+    companion object {
+        private const val MIN_GOAL = 1000
+        private const val MAX_GOAL = 10_000_000
+    }
+
     var goalAmount by mutableStateOf(MonevoConfig.DEFAULT_SAVINGS_GOAL)
         private set
     
@@ -46,24 +61,49 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     var activeCelebration by mutableStateOf<CelebrationType?>(null)
         private set
 
-    val totalSaved by derivedStateOf {
-        tiles.filter { it.isCompleted }.sumOf { it.amount }
-    }
+    var totalSaved by mutableIntStateOf(0)
+        private set
 
-    val progress by derivedStateOf {
-        if (goalAmount > 0) totalSaved.toFloat() / goalAmount else 0f
-    }
+    var progress by mutableFloatStateOf(0f)
+        private set
+
+    var completedTilesCount by mutableIntStateOf(0)
+        private set
 
     val atmosphere by derivedStateOf {
         JourneyAtmosphere.fromProgress(progress)
     }
 
-    val completedTilesCount by derivedStateOf {
-        tiles.count { it.isCompleted }
-    }
-
     val totalTilesCount by derivedStateOf {
         tiles.size
+    }
+
+    // --- INTEGRITY HELPERS ---
+
+    private fun validateGoal(goal: Int): Int {
+        return goal.coerceIn(MIN_GOAL, MAX_GOAL)
+    }
+
+    private fun recalculateProgress() {
+        val saved = tiles.filter { it.isCompleted }.sumOf { it.amount }
+        totalSaved = saved
+        completedTilesCount = tiles.count { it.isCompleted }
+        
+        val calculatedProgress = if (goalAmount > 0) saved.toFloat() / goalAmount else 0f
+        
+        // Safety clamping and NaN/Infinity protection
+        progress = when {
+            calculatedProgress.isNaN() -> 0f
+            calculatedProgress.isInfinite() -> 1f
+            else -> calculatedProgress.coerceIn(0f, 1f)
+        }
+    }
+
+    private fun loadSafeDefaults() {
+        goalAmount = MonevoConfig.DEFAULT_SAVINGS_GOAL
+        tiles.clear()
+        tiles.addAll(generateTiles(goalAmount))
+        recalculateProgress()
     }
 
     // --- PURE CALCULATION LOGIC ---
@@ -211,51 +251,57 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     }
 
     init {
-        viewModelScope.launch {
-            val savedGoal = dataStore.goalAmount.first() ?: MonevoConfig.DEFAULT_SAVINGS_GOAL
-            goalAmount = savedGoal
-            
-            tiles.addAll(generateTiles(goalAmount))
+        viewModelScope.launch(exceptionHandler) {
+            try {
+                val savedGoal = dataStore.goalAmount.first() ?: MonevoConfig.DEFAULT_SAVINGS_GOAL
+                goalAmount = validateGoal(savedGoal)
+                
+                tiles.addAll(generateTiles(goalAmount))
 
-            val savedTilesData = dataStore.completedTilesData.first()
-            val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
-            val savedCelebrations = dataStore.shownCelebrationIds.first()
-            val savedHaptics = dataStore.hapticsEnabled.first()
-            val savedReducedMotion = dataStore.reducedMotion.first()
-            
-            isOnboardingCompleted = savedOnboardingStatus
-            shownCelebrationIds.addAll(savedCelebrations)
-            isHapticsEnabled = savedHaptics
-            isReducedMotionEnabled = savedReducedMotion
-            
-            savedTilesData.forEach { (id, timestamp) ->
-                val index = tiles.indexOfFirst { it.id == id }
-                if (index != -1) {
-                    tiles[index] = tiles[index].copy(isCompleted = true, completedAt = timestamp)
+                val savedTilesData = dataStore.completedTilesData.first()
+                val savedOnboardingStatus = dataStore.isOnboardingCompleted.first()
+                val savedCelebrations = dataStore.shownCelebrationIds.first()
+                val savedHaptics = dataStore.hapticsEnabled.first()
+                val savedReducedMotion = dataStore.reducedMotion.first()
+                
+                isOnboardingCompleted = savedOnboardingStatus
+                shownCelebrationIds.addAll(savedCelebrations)
+                isHapticsEnabled = savedHaptics
+                isReducedMotionEnabled = savedReducedMotion
+                
+                savedTilesData.forEach { (id, timestamp) ->
+                    val index = tiles.indexOfFirst { it.id == id }
+                    if (index != -1) {
+                        tiles[index] = tiles[index].copy(isCompleted = true, completedAt = timestamp)
+                    }
                 }
+                recalculateProgress()
+            } catch (_: Exception) {
+                loadSafeDefaults()
             }
         }
     }
 
     fun updateGoal(newGoal: Int) {
-        if (newGoal == goalAmount || newGoal <= 0) return
+        val validatedGoal = validateGoal(newGoal)
+        if (validatedGoal == goalAmount && !isReconfiguring) return
         
-        viewModelScope.launch {
+        updateGoalJob?.cancel()
+        updateGoalJob = viewModelScope.launch(exceptionHandler) {
             isReconfiguring = true
-            reconfiguringGoal = newGoal
+            reconfiguringGoal = validatedGoal
             val currentSaved = totalSaved
             
             // Save to DataStore
-            dataStore.saveGoalAmount(newGoal)
+            dataStore.saveGoalAmount(validatedGoal)
             
             // Cinematic delay for recalibration orchestration
-            // This allows the user to register the transition and see the progress bar
             kotlinx.coroutines.delay(2000)
             
-            goalAmount = newGoal
+            goalAmount = validatedGoal
             
             // Regenerate tiles based on new goal
-            val newTiles = generateTiles(newGoal)
+            val newTiles = generateTiles(validatedGoal)
             tiles.clear()
             tiles.addAll(newTiles)
             
@@ -268,6 +314,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                 }
             }
             
+            recalculateProgress()
             saveState()
             isReconfiguring = false
         }
@@ -284,6 +331,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
                 completedAt = if (nowCompleted) System.currentTimeMillis() else null
             )
             
+            recalculateProgress()
             if (nowCompleted) {
                 checkForCelebration()
             }
@@ -309,7 +357,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     private fun triggerCelebration(id: String, amount: Int, isFinal: Boolean = false) {
         shownCelebrationIds.add(id)
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             dataStore.markCelebrationShown(id)
             activeCelebration = if (isFinal) {
                 CelebrationType.FinalGoal(amount)
@@ -324,7 +372,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     }
 
     fun completeOnboarding() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             dataStore.saveOnboardingCompleted()
             isOnboardingCompleted = true
         }
@@ -336,16 +384,16 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
 
     fun updateHapticsEnabled(enabled: Boolean) {
         isHapticsEnabled = enabled
-        viewModelScope.launch { dataStore.saveHapticsEnabled(enabled) }
+        viewModelScope.launch(exceptionHandler) { dataStore.saveHapticsEnabled(enabled) }
     }
 
     fun updateReducedMotion(enabled: Boolean) {
         isReducedMotionEnabled = enabled
-        viewModelScope.launch { dataStore.saveReducedMotion(enabled) }
+        viewModelScope.launch(exceptionHandler) { dataStore.saveReducedMotion(enabled) }
     }
 
     fun resetProgress() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             dataStore.clearAll()
             tiles.forEachIndexed { index, tile ->
                 tiles[index] = tile.copy(isCompleted = false, completedAt = null)
@@ -354,11 +402,12 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
             shownCelebrationIds.clear()
             activeCelebration = null
             isFreshStartArrival = true
+            recalculateProgress()
         }
     }
 
     private fun saveState() {
-        viewModelScope.launch {
+        viewModelScope.launch(exceptionHandler) {
             val completedData = tiles
                 .filter { it.isCompleted && it.completedAt != null }
                 .associate { it.id to it.completedAt!! }
