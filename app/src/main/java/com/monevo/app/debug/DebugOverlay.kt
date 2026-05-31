@@ -27,12 +27,15 @@ import com.monevo.app.ui.SavingsViewModel
 import com.monevo.app.BuildConfig
 import kotlin.math.roundToInt
 
+private const val SHOW_DEBUG_MENU = false
+
 /**
  * [DEBUG ONLY] Floating, draggable, and minimizable debug panel.
  * This should be removed before production.
  */
 @Composable
 fun DebugMilestoneOverlay(viewModel: SavingsViewModel) {
+    if (!SHOW_DEBUG_MENU) return
     if (!BuildConfig.DEBUG) return
 
     var isExpanded by remember { mutableStateOf(false) }
