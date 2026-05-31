@@ -34,6 +34,7 @@ import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.*
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import com.monevo.app.debug.DebugHapticController
+import com.monevo.app.BuildConfig
 import com.monevo.app.ui.motion.LocalMotionSettings
 import kotlinx.coroutines.delay
 
@@ -106,7 +107,9 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 } else {
                     vibrator.vibrate(duration)
                 }
-                DebugHapticController.onHapticExecuted(true)
+                if (BuildConfig.DEBUG) {
+                    DebugHapticController.onHapticExecuted(true)
+                }
             }
             
             showRecognitionGlow = true
@@ -126,7 +129,9 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 } else {
                     vibrator.vibrate(duration)
                 }
-                DebugHapticController.onHapticExecuted(true)
+                if (BuildConfig.DEBUG) {
+                    DebugHapticController.onHapticExecuted(true)
+                }
             }
             
             delay(motionSettings.scaleDuration(1200).toLong())

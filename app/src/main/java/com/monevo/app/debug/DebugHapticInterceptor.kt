@@ -5,6 +5,7 @@ import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.hapticfeedback.HapticFeedback
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
+import com.monevo.app.BuildConfig
 
 /**
  * [DEBUG ONLY] Intercepts all haptic feedback calls to trigger visual confirmation.
@@ -12,6 +13,11 @@ import androidx.compose.ui.platform.LocalHapticFeedback
  */
 @Composable
 fun DebugHapticInterceptor(isAppHapticsEnabled: Boolean, content: @Composable () -> Unit) {
+    if (!BuildConfig.DEBUG) {
+        content()
+        return
+    }
+
     val originalHaptic = LocalHapticFeedback.current
     
     val wrappedHaptic = object : HapticFeedback {

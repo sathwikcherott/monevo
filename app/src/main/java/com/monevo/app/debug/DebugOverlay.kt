@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.SavingsViewModel
+import com.monevo.app.BuildConfig
 import kotlin.math.roundToInt
 
 /**
@@ -32,6 +33,8 @@ import kotlin.math.roundToInt
  */
 @Composable
 fun DebugMilestoneOverlay(viewModel: SavingsViewModel) {
+    if (!BuildConfig.DEBUG) return
+
     var isExpanded by remember { mutableStateOf(false) }
     var showResetDialog by remember { mutableStateOf(false) }
     

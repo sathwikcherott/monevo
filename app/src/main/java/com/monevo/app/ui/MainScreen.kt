@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import com.monevo.app.debug.DebugHapticInterceptor
 import com.monevo.app.debug.DebugMilestoneOverlay
+import com.monevo.app.BuildConfig
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.DateRange
@@ -46,108 +47,119 @@ fun MainScreen() {
     val viewModel: SavingsViewModel = viewModel()
     
     ProvideMotionSettings(isReducedMotionEnabled = viewModel.isReducedMotionEnabled) {
-        Box(modifier = Modifier.fillMaxSize()) {
-            if (!viewModel.isOnboardingCompleted) {
-                DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
+        val items = listOf(Screen.Home, Screen.Progress, Screen.Profile)
+
+        val content: @Composable () -> Unit = {
+            Box(modifier = Modifier.fillMaxSize()) {
+                if (!viewModel.isOnboardingCompleted) {
                     OnboardingScreen(onFinish = { viewModel.completeOnboarding() })
+                } else {
+                    ScaffoldContent(navController, viewModel, items)
                 }
-            } else {
-                val items = listOf(
-                    Screen.Home,
-                    Screen.Progress,
-                    Screen.Profile
+
+                // Goal reconfiguration overlay - Highest priority layer
+                ReconfiguringOverlay(
+                    isVisible = viewModel.isReconfiguring,
+                    targetGoal = viewModel.reconfiguringGoal
                 )
+            }
+        }
 
-                DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
-                    Scaffold(
-                        bottomBar = {
-                            val navBackStackEntry by navController.currentBackStackEntryAsState()
-                            val currentDestination = navBackStackEntry?.destination
-                            
-                            val isBottomBarVisible = remember { mutableStateOf(false) }
-                            LaunchedEffect(viewModel.isFreshStartArrival, viewModel.isAppLaunchEntrance) {
-                                if (viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) {
-                                    isBottomBarVisible.value = true
-                                }
-                            }
+        if (BuildConfig.DEBUG) {
+            DebugHapticInterceptor(isAppHapticsEnabled = viewModel.isHapticsEnabled) {
+                Box(modifier = Modifier.fillMaxSize()) {
+                    content()
+                    DebugMilestoneOverlay(viewModel)
+                }
+            }
+        } else {
+            content()
+        }
+    }
+}
 
-                            CinematicEntrance(
-                                index = 8, 
-                                isTriggered = isBottomBarVisible.value
-                            ) {
-                                MonevoBottomNavigation(
-                                    screens = items,
-                                    currentDestination = currentDestination,
-                                    onNavigate = { screen ->
-                                        navController.navigate(screen.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                )
-                            }
-                        }
-                    ) { innerPadding ->
-                        val motionSettings = LocalMotionSettings.current
-                        val isReducedMotion = motionSettings.isReducedMotionEnabled
-                        
-                        val navDuration = if (isReducedMotion) 200 else 400
-                        val easing = if (isReducedMotion) LinearEasing else FastOutSlowInEasing
-                        
-                        NavHost(
-                            navController = navController,
-                            startDestination = Screen.Home.route,
-                            modifier = Modifier.padding(innerPadding),
-                            enterTransition = { fadeIn(animationSpec = tween(navDuration, easing = easing)) },
-                            exitTransition = { fadeOut(animationSpec = tween(navDuration, easing = easing)) },
-                            popEnterTransition = { fadeIn(animationSpec = tween(navDuration, easing = easing)) },
-                            popExitTransition = { fadeOut(animationSpec = tween(navDuration, easing = easing)) }
-                        ) {
-                            composable(Screen.Home.route) { HomeScreen(viewModel) }
-                            composable(Screen.Progress.route) { 
-                                ProgressScreen(
-                                    viewModel = viewModel,
-                                    onNavigateHome = {
-                                        navController.navigate(Screen.Home.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                ) 
-                            }
-                            composable(Screen.Profile.route) { 
-                                ProfileScreen(
-                                    viewModel = viewModel,
-                                    onNavigateHome = {
-                                        navController.navigate(Screen.Home.route) {
-                                            popUpTo(navController.graph.findStartDestination().id) {
-                                                saveState = true
-                                            }
-                                            launchSingleTop = true
-                                            restoreState = true
-                                        }
-                                    }
-                                ) 
-                            }
-                        }
-                    }
+@Composable
+fun ScaffoldContent(
+    navController: androidx.navigation.NavHostController,
+    viewModel: SavingsViewModel,
+    items: List<Screen>
+) {
+    Scaffold(
+        bottomBar = {
+            val navBackStackEntry by navController.currentBackStackEntryAsState()
+            val currentDestination = navBackStackEntry?.destination
+            
+            val isBottomBarVisible = remember { mutableStateOf(false) }
+            LaunchedEffect(viewModel.isFreshStartArrival, viewModel.isAppLaunchEntrance) {
+                if (viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) {
+                    isBottomBarVisible.value = true
                 }
             }
 
-            // [DEBUG] Milestone progression tester - Always mounted to support developer testing
-            DebugMilestoneOverlay(viewModel)
-
-            // Goal reconfiguration overlay - Highest priority layer
-            ReconfiguringOverlay(
-                isVisible = viewModel.isReconfiguring,
-                targetGoal = viewModel.reconfiguringGoal
-            )
+            CinematicEntrance(
+                index = 8, 
+                isTriggered = isBottomBarVisible.value
+            ) {
+                MonevoBottomNavigation(
+                    screens = items,
+                    currentDestination = currentDestination,
+                    onNavigate = { screen ->
+                        navController.navigate(screen.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                )
+            }
+        }
+    ) { innerPadding ->
+        val motionSettings = LocalMotionSettings.current
+        val isReducedMotion = motionSettings.isReducedMotionEnabled
+        
+        val navDuration = if (isReducedMotion) 200 else 400
+        val easing = if (isReducedMotion) LinearEasing else FastOutSlowInEasing
+        
+        NavHost(
+            navController = navController,
+            startDestination = Screen.Home.route,
+            modifier = Modifier.padding(innerPadding),
+            enterTransition = { fadeIn(tween(navDuration, easing = easing)) },
+            exitTransition = { fadeOut(tween(navDuration, easing = easing)) },
+            popEnterTransition = { fadeIn(tween(navDuration, easing = easing)) },
+            popExitTransition = { fadeOut(tween(navDuration, easing = easing)) }
+        ) {
+            composable(Screen.Home.route) { HomeScreen(viewModel) }
+            composable(Screen.Progress.route) { 
+                ProgressScreen(
+                    viewModel = viewModel,
+                    onNavigateHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                ) 
+            }
+            composable(Screen.Profile.route) { 
+                ProfileScreen(
+                    viewModel = viewModel,
+                    onNavigateHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    }
+                ) 
+            }
         }
     }
 }

@@ -13,12 +13,15 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.collectLatest
+import com.monevo.app.BuildConfig
 
 /**
  * [DEBUG ONLY] Visualizer that confirms haptic events are firing.
  */
 @Composable
 fun DebugHapticVisualizer() {
+    if (!BuildConfig.DEBUG) return
+
     var isVisible by remember { mutableStateOf(false) }
     val animProgress = remember { Animatable(0f) }
 

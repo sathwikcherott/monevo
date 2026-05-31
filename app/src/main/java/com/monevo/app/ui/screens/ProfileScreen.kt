@@ -28,6 +28,7 @@ import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import com.monevo.app.ui.atmosphere.getAdaptiveGold
 import com.monevo.app.ui.components.CinematicResetFlow
 import com.monevo.app.ui.motion.LocalMotionSettings
+import com.monevo.app.BuildConfig
 import com.monevo.app.ui.theme.*
 
 @Composable
@@ -94,10 +95,12 @@ fun ProfileScreen(
             
             // 4. Data Section
             ProfileSection(title = "Data & Continuity") {
-                ProfileActionOption(
-                    label = "Replay Onboarding",
-                    onClick = { viewModel.replayOnboarding() }
-                )
+                if (BuildConfig.DEBUG) {
+                    ProfileActionOption(
+                        label = "Replay Onboarding",
+                        onClick = { viewModel.replayOnboarding() }
+                    )
+                }
                 ProfileActionOption(
                     label = "Reset Progress", 
                     isDangerous = true,
