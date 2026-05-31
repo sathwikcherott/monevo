@@ -14,7 +14,6 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.graphics.Color
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import com.monevo.app.ui.atmosphere.getAdaptiveAccent
-import com.monevo.app.ui.atmosphere.rememberAnimatedAtmosphere
 import com.monevo.app.ui.insights.InsightData
 import com.monevo.app.ui.theme.*
 
@@ -25,10 +24,9 @@ fun InsightsCard(
     modifier: Modifier = Modifier
 ) {
     val insights = insightDataProvider()
-    val targetAtmosphere = atmosphereProvider()
-    val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
-    val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
-    
+    val atmosphere = atmosphereProvider()
+    val adaptiveAccent = atmosphere.getAdaptiveAccent()
+
     Card(
         modifier = modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
@@ -46,7 +44,7 @@ fun InsightsCard(
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.5.sp
             )
-            
+
             Spacer(modifier = Modifier.height(24.dp))
 
             // 1. Pace Row
@@ -86,11 +84,11 @@ fun InsightsCard(
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
-            
+
             Spacer(modifier = Modifier.height(8.dp))
 
             val forecastText = if (insights.estimatedDaysRemaining != null) {
-                if (insights.estimatedDaysRemaining == 0) "Journey complete." 
+                if (insights.estimatedDaysRemaining == 0) "Journey complete."
                 else "Approximately ${insights.estimatedDaysRemaining} days remain at current pace."
             } else {
                 "More data needed for projection."

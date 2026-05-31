@@ -40,8 +40,20 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
     // Optimization: Simplified transition to reduce offscreen rendering overhead
     AnimatedVisibility(
         visible = isVisible,
-        enter = fadeIn(animationSpec = tween(600)),
-        exit = fadeOut(animationSpec = tween(800))
+        enter = fadeIn(
+            animationSpec = if (motionSettings.isReducedMotionEnabled) {
+                tween(200, easing = LinearEasing)
+            } else {
+                tween(600)
+            }
+        ),
+        exit = fadeOut(
+            animationSpec = if (motionSettings.isReducedMotionEnabled) {
+                tween(200, easing = LinearEasing)
+            } else {
+                tween(800)
+            }
+        )
     ) {
         Box(
             modifier = Modifier

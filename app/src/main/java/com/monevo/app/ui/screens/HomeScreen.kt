@@ -146,10 +146,14 @@ fun HomeScreen(viewModel: SavingsViewModel) {
 
     val contentAlpha by animateFloatAsState(
         targetValue = if (viewModel.isReconfiguring) 0f else 1f,
-        animationSpec = tween(
-            durationMillis = motionSettings.scaleDuration(600), 
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = if (motionSettings.isReducedMotionEnabled) {
+            tween(200, easing = LinearEasing)
+        } else {
+            tween(
+                durationMillis = 600, 
+                easing = FastOutSlowInEasing
+            )
+        },
         label = "contentAlpha"
     )
 
@@ -297,21 +301,29 @@ fun TileEntranceWrapper(
     // Architecture: Lightweight deterministic stagger without coroutines/delays
     val alpha by animateFloatAsState(
         targetValue = if (isTriggered) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = motionSettings.scaleDuration(400, 0.5f),
-            delayMillis = (index * (if (isReducedMotion) 10 else 25)).coerceAtMost(if (isReducedMotion) 200 else 500), // Calm, capped stagger
-            easing = EaseOutCubic
-        ),
+        animationSpec = if (isReducedMotion) {
+            tween(200, easing = LinearEasing)
+        } else {
+            tween(
+                durationMillis = 500,
+                delayMillis = (index * 25).coerceAtMost(500),
+                easing = EaseOutQuart
+            )
+        },
         label = "tileAlpha"
     )
 
     val translateY by animateFloatAsState(
         targetValue = if (isTriggered || isReducedMotion) 0f else 12f,
-        animationSpec = tween(
-            durationMillis = motionSettings.scaleDuration(500, 0.5f),
-            delayMillis = (index * 25).coerceAtMost(500),
-            easing = EaseOutCubic
-        ),
+        animationSpec = if (isReducedMotion) {
+            snap()
+        } else {
+            tween(
+                durationMillis = 500,
+                delayMillis = (index * 25).coerceAtMost(500),
+                easing = EaseOutQuart
+            )
+        },
         label = "tileTranslation"
     )
 
@@ -339,11 +351,15 @@ fun CinematicEntrance(
     // Architecture: Deterministic progress animation without internal state or LaunchedEffects
     val entranceProgress by animateFloatAsState(
         targetValue = if (isTriggered) 1f else 0f,
-        animationSpec = tween(
-            durationMillis = if (isReducedMotion) 200 else 500, 
-            delayMillis = index * (if (isReducedMotion) 20 else 60), // Sequential staging
-            easing = EaseOutCubic
-        ),
+        animationSpec = if (isReducedMotion) {
+            tween(200, easing = LinearEasing)
+        } else {
+            tween(
+                durationMillis = 500, 
+                delayMillis = index * 60, // Sequential staging
+                easing = EaseOutQuart
+            )
+        },
         label = "entranceProgress"
     )
 

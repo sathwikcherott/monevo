@@ -1,10 +1,7 @@
 package com.monevo.app.ui.screens
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -157,11 +154,12 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                         val isSelected = pagerState.currentPage == index
                         val width by animateDpAsState(
                             targetValue = if (isSelected) 24.dp else 8.dp,
-                            animationSpec = if (isReducedMotion) tween(200) else spring(dampingRatio = Spring.DampingRatioLowBouncy),
+                            animationSpec = if (isReducedMotion) tween(200, easing = LinearEasing) else spring(stiffness = Spring.StiffnessMedium),
                             label = "width"
                         )
                         val color by animateColorAsState(
                             targetValue = if (isSelected) SoftGold else ElevatedCard,
+                            animationSpec = if (isReducedMotion) tween(200, easing = LinearEasing) else spring(stiffness = Spring.StiffnessMedium),
                             label = "color"
                         )
                         

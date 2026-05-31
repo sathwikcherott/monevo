@@ -1,10 +1,7 @@
 package com.monevo.app.ui.components
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Spring
-import androidx.compose.animation.core.animateFloatAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -46,23 +43,23 @@ fun SavingsTileItem(
     val isPressed by interactionSource.collectIsPressedAsState()
     
     val scale by animateFloatAsState(
-        targetValue = if (isPressed) (if (isReducedMotion) 0.99f else 0.97f) else 1f,
-        animationSpec = if (isReducedMotion) tween(100) else spring(
-            dampingRatio = Spring.DampingRatioLowBouncy,
-            stiffness = Spring.StiffnessLow
+        targetValue = if (isPressed) (if (isReducedMotion) 1f else 0.98f) else 1f,
+        animationSpec = if (isReducedMotion) snap() else spring(
+            dampingRatio = Spring.DampingRatioNoBouncy,
+            stiffness = Spring.StiffnessMedium
         ),
         label = "scale"
     )
 
     val backgroundColor by animateColorAsState(
         targetValue = if (tile.isCompleted) DeepProgressGreen.copy(alpha = 0.85f) else SurfaceElevated.copy(alpha = 0.4f),
-        animationSpec = spring(stiffness = Spring.StiffnessLow), 
+        animationSpec = if (isReducedMotion) tween(200, easing = LinearEasing) else spring(stiffness = Spring.StiffnessMedium), 
         label = "color"
     )
     
     val contentColor by animateColorAsState(
         targetValue = if (tile.isCompleted) TextPrimary else TextPrimary.copy(alpha = 0.5f),
-        animationSpec = spring(stiffness = Spring.StiffnessLow), 
+        animationSpec = if (isReducedMotion) tween(200, easing = LinearEasing) else spring(stiffness = Spring.StiffnessMedium),
         label = "contentColor"
     )
 

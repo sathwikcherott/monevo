@@ -11,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -37,7 +39,6 @@ fun MilestoneAccordionHeader(
     val haptic = LocalHapticFeedback.current
     val targetAtmosphere = atmosphereProvider()
     val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
-    val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
 
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
@@ -50,10 +51,14 @@ fun MilestoneAccordionHeader(
 
     val glowAlpha by animateFloatAsState(
         targetValue = if (isGlowActive) motionSettings.scaleValue(0.3f, 0.15f) else 0f,
-        animationSpec = tween(
-            durationMillis = if (motionSettings.isReducedMotionEnabled) 150 else motionSettings.scaleDuration(600),
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = if (motionSettings.isReducedMotionEnabled) {
+            tween(200, easing = LinearEasing)
+        } else {
+            tween(
+                durationMillis = 800, 
+                easing = EaseOutExpo
+            )
+        },
         label = "glowAlpha"
     )
 
@@ -67,22 +72,36 @@ fun MilestoneAccordionHeader(
                 onClick()
             }
         },
-        color = SurfaceBase.copy(alpha = 0.7f + (0.3f * atmosphere.surfaceRichness)),
+        color = Color.Transparent,
         shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
-            .graphicsLayer { alpha = containerAlpha }
+            .graphicsLayer { 
+                this.alpha = containerAlpha 
+            }
+            .drawBehind {
+                val richness = atmosphere.richness.value
+                drawRoundRect(
+                    color = SurfaceBase.copy(alpha = 0.7f + (0.3f * richness)),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(20.dp.toPx())
+                )
+            }
             .then(
                 if (isGlowActive) {
+                    val richness = atmosphere.richness.value
+                    val warmth = atmosphere.warmth.value
+                    val accent = getAdaptiveAccent(warmth)
                     Modifier.shadow(
                         elevation = 1.dp,
                         shape = RoundedCornerShape(20.dp),
-                        spotColor = adaptiveAccent.copy(alpha = glowAlpha * atmosphere.surfaceRichness),
+                        spotColor = accent.copy(alpha = glowAlpha * richness),
                         ambientColor = Color.Transparent
                     )
                 } else Modifier
             )
     ) {
+        val warmth = atmosphere.warmth.value
+        val adaptiveAccent = getAdaptiveAccent(warmth)
         Row(
             modifier = Modifier
                 .padding(horizontal = 20.dp, vertical = 16.dp),

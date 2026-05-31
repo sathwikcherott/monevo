@@ -59,10 +59,25 @@ fun CinematicResetFlow(
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        val motionSettings = LocalMotionSettings.current
+        val isReducedMotion = motionSettings.isReducedMotionEnabled
+        
         AnimatedVisibility(
             visible = (isVisible && currentStage == ResetStage.CONFIRMATION),
-            enter = fadeIn(animationSpec = tween(500)),
-            exit = fadeOut(animationSpec = tween(500))
+            enter = fadeIn(
+                animationSpec = if (isReducedMotion) {
+                    tween(200, easing = LinearEasing)
+                } else {
+                    tween(500)
+                }
+            ),
+            exit = fadeOut(
+                animationSpec = if (isReducedMotion) {
+                    tween(200, easing = LinearEasing)
+                } else {
+                    tween(500)
+                }
+            )
         ) {
             MonevoResetConfirmation(
                 onConfirm = {

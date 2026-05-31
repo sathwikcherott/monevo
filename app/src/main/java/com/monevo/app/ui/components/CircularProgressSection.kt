@@ -31,22 +31,19 @@ fun CircularProgressSection(
     val isReducedMotion = motionSettings.isReducedMotionEnabled
     val targetAtmosphere = atmosphereProvider()
     val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
-    val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
-    val progress = progressProvider()
-    val totalSaved = totalSavedProvider()
     
     val infiniteTransition = rememberInfiniteTransition(label = "ringGlow")
     
     // Calmer pulse: slower duration and reduced intensity for better 120Hz stability
-    val pulseAlpha by if (isReducedMotion) {
+    val pulseAlphaState = if (isReducedMotion) {
         remember { mutableStateOf(0.01f) }
     } else {
         infiniteTransition.animateFloat(
             initialValue = 0.01f,
             targetValue = if (isMomentumActive) {
-                motionSettings.scaleValue(0.06f, 0.02f) * atmosphere.glowIntensity
+                motionSettings.scaleValue(0.06f, 0.02f) * targetAtmosphere.glowIntensity
             } else {
-                0.02f * atmosphere.glowIntensity
+                0.02f * targetAtmosphere.glowIntensity
             },
             animationSpec = infiniteRepeatable(
                 animation = tween(
@@ -69,9 +66,16 @@ fun CircularProgressSection(
         val ringSize = 200.dp
         
         Canvas(modifier = Modifier.size(ringSize)) {
+            // Draw-phase isolation
+            val richness = atmosphere.richness.value
+            val warmth = atmosphere.warmth.value
+            val accent = getAdaptiveAccent(warmth)
+            val pulseAlpha = pulseAlphaState.value
+            val progress = progressProvider()
+
             // Background Track
             drawArc(
-                color = DividerStroke.copy(alpha = 0.3f + (0.2f * atmosphere.surfaceRichness)),
+                color = DividerStroke.copy(alpha = 0.3f + (0.2f * richness)),
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,
@@ -80,7 +84,7 @@ fun CircularProgressSection(
             
             // Tight, almost invisible glow for AMOLED
             drawArc(
-                color = adaptiveAccent.copy(alpha = pulseAlpha),
+                color = accent.copy(alpha = pulseAlpha),
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
@@ -89,7 +93,7 @@ fun CircularProgressSection(
             
             // Active Progress Arc
             drawArc(
-                color = adaptiveAccent,
+                color = accent,
                 startAngle = -90f,
                 sweepAngle = 360f * progress.coerceIn(0f, 1f),
                 useCenter = false,
@@ -101,6 +105,11 @@ fun CircularProgressSection(
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
+            val progress = progressProvider()
+            val totalSaved = totalSavedProvider()
+            val warmth = atmosphere.warmth.value
+            val adaptiveAccent = getAdaptiveAccent(warmth)
+
             Text(
                 text = "${(progress * 100).toInt()}%",
                 style = MaterialTheme.typography.displayMedium,

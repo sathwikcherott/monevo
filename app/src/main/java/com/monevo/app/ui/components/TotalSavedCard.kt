@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
@@ -37,23 +38,26 @@ fun TotalSavedCard(
     val targetAtmosphere = atmosphereProvider()
     val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
     val journeyState = journeyStateProvider()
-    val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
     
     // Removed infinite breathing animation to reduce rendering overhead and visual busyness
     // Constant ambient movement is reduced for a calmer premium feel.
 
     val recognitionScale by animateFloatAsState(
-        targetValue = if (isGlowActive) motionSettings.scaleValue(1.02f, 1f) else 1f,
+        targetValue = if (isGlowActive && !motionSettings.isReducedMotionEnabled) 1.02f else 1f,
         animationSpec = motionSettings.gentleSpring(),
         label = "recognitionScale"
     )
 
     val glowAlpha by animateFloatAsState(
         targetValue = if (isGlowActive) motionSettings.scaleValue(0.15f, 0.08f) else 0f,
-        animationSpec = tween(
-            durationMillis = if (motionSettings.isReducedMotionEnabled) 150 else motionSettings.scaleDuration(600),
-            easing = FastOutSlowInEasing
-        ),
+        animationSpec = if (motionSettings.isReducedMotionEnabled) {
+            tween(200, easing = LinearEasing)
+        } else {
+            tween(
+                durationMillis = 800, 
+                easing = EaseOutExpo
+            )
+        },
         label = "glowAlpha"
     )
 
@@ -63,24 +67,38 @@ fun TotalSavedCard(
             .graphicsLayer {
                 // Only scale during active recognition moments
                 val s = recognitionScale
-                scaleX = s
-                scaleY = s
+                this.scaleX = s
+                this.scaleY = s
             }
-            .shadow(
-                elevation = if (isGlowActive || isCompleted) motionSettings.scaleDp(2.dp, 0.5.dp) else 0.dp,
-                shape = RoundedCornerShape(24.dp),
-                spotColor = adaptiveAccent.copy(alpha = if (isCompleted) 0.15f * atmosphere.surfaceRichness else glowAlpha),
-                ambientColor = Color.Transparent
+            .drawBehind {
+                val richness = atmosphere.richness.value
+                drawRoundRect(
+                    color = SurfaceBase.copy(alpha = 0.8f + (0.2f * richness)),
+                    cornerRadius = androidx.compose.ui.geometry.CornerRadius(24.dp.toPx())
+                )
+            }
+            .then(
+                if (isGlowActive || isCompleted) {
+                    val richness = atmosphere.richness.value
+                    val warmth = atmosphere.warmth.value
+                    val accent = getAdaptiveAccent(warmth)
+                    Modifier.shadow(
+                        elevation = motionSettings.scaleDp(2.dp, 0.5.dp),
+                        shape = RoundedCornerShape(24.dp),
+                        spotColor = accent.copy(alpha = if (isCompleted) 0.15f * richness else glowAlpha),
+                        ambientColor = Color.Transparent
+                    )
+                } else Modifier
             ),
-        colors = CardDefaults.cardColors(
-            containerColor = SurfaceBase.copy(alpha = 0.8f + (0.2f * atmosphere.surfaceRichness))
-        ),
+        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
         ) {
+            val warmth = atmosphere.warmth.value
+            val adaptiveAccent = getAdaptiveAccent(warmth)
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,

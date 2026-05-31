@@ -1,13 +1,7 @@
 package com.monevo.app.ui
 
 import android.app.Application
-import androidx.compose.runtime.derivedStateOf
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableFloatStateOf
-import androidx.compose.runtime.mutableIntStateOf
-import androidx.compose.runtime.mutableStateListOf
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.monevo.app.config.MonevoConfig
@@ -26,6 +20,11 @@ import kotlinx.coroutines.launch
 import java.util.*
 import java.util.concurrent.TimeUnit
 import kotlin.random.Random
+
+@Immutable
+data class ChartData(
+    val heights: List<Float>
+)
 
 class SavingsViewModel(application: Application) : AndroidViewModel(application) {
     private val dataStore = MonevoDataStore(application)
@@ -180,6 +179,10 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         }
         val maxAmount = daySavings.maxOrNull() ?: 1f
         daySavings.map { if (maxAmount > 0) it / maxAmount else 0f }
+    }
+
+    val weeklyMomentumData by derivedStateOf {
+        ChartData(weeklyMomentum)
     }
 
     val consistencyStats by derivedStateOf {
@@ -505,6 +508,7 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
     }
 }
 
+@Stable
 data class MilestoneGroup(
     val id: Int,
     val rangeStart: Int,
@@ -521,6 +525,7 @@ data class MilestoneGroup(
         get() = tiles.all { it.isCompleted }
 }
 
+@Stable
 data class ConsistencyData(
     val streak: Int,
     val bestWeek: Int,

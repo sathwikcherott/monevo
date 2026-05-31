@@ -1,5 +1,6 @@
 package com.monevo.app.ui.insights
 
+import androidx.compose.runtime.Immutable
 import java.util.Calendar
 import java.util.concurrent.TimeUnit
 import kotlin.math.roundToInt
@@ -7,6 +8,7 @@ import kotlin.math.roundToInt
 /**
  * Data model for behavioral insights.
  */
+@Immutable
 data class InsightData(
     val averageDailySavings: Float,
     val averageWeeklySavings: Float,

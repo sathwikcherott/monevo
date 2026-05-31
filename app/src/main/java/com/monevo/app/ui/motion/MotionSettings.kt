@@ -31,8 +31,8 @@ data class MotionSettings(
      * Reusable spring specs.
      */
     fun <T> gentleSpring() = spring<T>(
-        dampingRatio = if (isReducedMotionEnabled) Spring.DampingRatioNoBouncy else Spring.DampingRatioLowBouncy,
-        stiffness = if (isReducedMotionEnabled) Spring.StiffnessVeryLow else Spring.StiffnessLow
+        dampingRatio = if (isReducedMotionEnabled) Spring.DampingRatioNoBouncy else Spring.DampingRatioNoBouncy,
+        stiffness = if (isReducedMotionEnabled) Spring.StiffnessVeryLow else Spring.StiffnessMedium
     )
 
     /**

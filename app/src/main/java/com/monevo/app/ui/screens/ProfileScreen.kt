@@ -1,9 +1,7 @@
 package com.monevo.app.ui.screens
 
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateDpAsState
-import androidx.compose.animation.core.spring
-import androidx.compose.animation.core.tween
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -373,19 +371,19 @@ fun MonevoToggle(checked: Boolean) {
     
     val trackColor by animateColorAsState(
         targetValue = if (checked) SoftAccentPink.copy(alpha = 0.9f) else SurfaceElevated,
-        animationSpec = if (isReducedMotion) tween(200) else spring(),
+        animationSpec = if (isReducedMotion) tween(200, easing = LinearEasing) else spring(stiffness = Spring.StiffnessMedium),
         label = "trackColor"
     )
     
     val thumbColor by animateColorAsState(
         targetValue = if (checked) PrimaryBackground else TextSecondary.copy(alpha = 0.5f),
-        animationSpec = if (isReducedMotion) tween(200) else spring(),
+        animationSpec = if (isReducedMotion) tween(200, easing = LinearEasing) else spring(stiffness = Spring.StiffnessMedium),
         label = "thumbColor"
     )
     
     val thumbOffset by animateDpAsState(
         targetValue = if (checked) 16.dp else 0.dp,
-        animationSpec = if (isReducedMotion) tween(150) else spring(stiffness = 900f),
+        animationSpec = if (isReducedMotion) snap() else spring(stiffness = Spring.StiffnessMedium),
         label = "thumbOffset"
     )
 

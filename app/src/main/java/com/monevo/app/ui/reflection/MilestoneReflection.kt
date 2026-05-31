@@ -1,8 +1,11 @@
 package com.monevo.app.ui.reflection
 
+import androidx.compose.runtime.Immutable
+
 /**
  * Represents a thoughtful reflection on the user's progress.
  */
+@Immutable
 data class MilestoneReflection(
     val title: String,
     val message: String

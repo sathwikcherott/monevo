@@ -2,9 +2,7 @@ package com.monevo.app.ui.atmosphere
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
 import androidx.compose.ui.graphics.Color
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.PrimaryAccentPink
@@ -14,10 +12,11 @@ import com.monevo.app.ui.theme.SoftAccentPink
  * Defines the premium AMOLED-optimized emotional atmosphere stages.
  * Illumination is extremely restrained to maintain deep cinematic darkness.
  */
-data class AtmosphereParams(
-    val glowIntensity: Float,
-    val accentWarmth: Float,
-    val surfaceRichness: Float
+@Stable
+class AtmosphereState(
+    val glow: State<Float>,
+    val warmth: State<Float>,
+    val richness: State<Float>
 )
 
 sealed class JourneyAtmosphere(
@@ -81,32 +80,32 @@ sealed class JourneyAtmosphere(
 }
 
 @Composable
-fun rememberAnimatedAtmosphere(target: JourneyAtmosphere): AtmosphereParams {
+fun rememberAnimatedAtmosphere(target: JourneyAtmosphere): AtmosphereState {
     val motionSettings = LocalMotionSettings.current
     val isReducedMotion = motionSettings.isReducedMotionEnabled
     
-    val duration = if (isReducedMotion) 0 else 2000
+    val duration = if (isReducedMotion) 0 else 3000
     
-    val glow by animateFloatAsState(
+    val glow = animateFloatAsState(
         targetValue = target.glowIntensity,
         animationSpec = tween(duration),
         label = "glow"
     )
     
-    val warmth by animateFloatAsState(
+    val warmth = animateFloatAsState(
         targetValue = target.accentWarmth,
         animationSpec = tween(duration),
         label = "warmth"
     )
     
-    val richness by animateFloatAsState(
+    val richness = animateFloatAsState(
         targetValue = target.surfaceRichness,
         animationSpec = tween(duration),
         label = "richness"
     )
     
-    return remember(glow, warmth, richness) {
-        AtmosphereParams(glow, warmth, richness)
+    return remember {
+        AtmosphereState(glow, warmth, richness)
     }
 }
 

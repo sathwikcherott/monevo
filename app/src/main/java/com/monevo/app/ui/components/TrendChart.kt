@@ -16,15 +16,17 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.monevo.app.ui.ChartData
 import com.monevo.app.ui.theme.*
 import java.util.*
 
 @Composable
 fun TrendChart(
-    heightsProvider: () -> List<Float>,
+    chartDataProvider: () -> ChartData,
     modifier: Modifier = Modifier
 ) {
-    val heights = heightsProvider()
+    val chartData = chartDataProvider()
+    val heights = chartData.heights
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
     
     val currentDayIndex = remember {

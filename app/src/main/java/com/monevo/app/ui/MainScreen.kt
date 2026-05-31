@@ -2,6 +2,8 @@ package com.monevo.app.ui
 
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -90,16 +92,19 @@ fun MainScreen() {
                         }
                     ) { innerPadding ->
                         val motionSettings = LocalMotionSettings.current
-                        val navDuration = motionSettings.scaleDuration(400, 0.5f)
+                        val isReducedMotion = motionSettings.isReducedMotionEnabled
+                        
+                        val navDuration = if (isReducedMotion) 200 else 400
+                        val easing = if (isReducedMotion) LinearEasing else FastOutSlowInEasing
                         
                         NavHost(
                             navController = navController,
                             startDestination = Screen.Home.route,
                             modifier = Modifier.padding(innerPadding),
-                            enterTransition = { fadeIn(animationSpec = tween(navDuration)) },
-                            exitTransition = { fadeOut(animationSpec = tween(navDuration)) },
-                            popEnterTransition = { fadeIn(animationSpec = tween(navDuration)) },
-                            popExitTransition = { fadeOut(animationSpec = tween(navDuration)) }
+                            enterTransition = { fadeIn(animationSpec = tween(navDuration, easing = easing)) },
+                            exitTransition = { fadeOut(animationSpec = tween(navDuration, easing = easing)) },
+                            popEnterTransition = { fadeIn(animationSpec = tween(navDuration, easing = easing)) },
+                            popExitTransition = { fadeOut(animationSpec = tween(navDuration, easing = easing)) }
                         ) {
                             composable(Screen.Home.route) { HomeScreen(viewModel) }
                             composable(Screen.Progress.route) { 
