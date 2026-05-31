@@ -1,6 +1,12 @@
 package com.monevo.app.ui.atmosphere
 
+import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.tween
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
+import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.PrimaryAccentPink
 import com.monevo.app.ui.theme.SoftAccentPink
 
@@ -8,47 +14,59 @@ import com.monevo.app.ui.theme.SoftAccentPink
  * Defines the premium AMOLED-optimized emotional atmosphere stages.
  * Illumination is extremely restrained to maintain deep cinematic darkness.
  */
+data class AtmosphereParams(
+    val glowIntensity: Float,
+    val accentWarmth: Float,
+    val surfaceRichness: Float
+)
+
 sealed class JourneyAtmosphere(
     val title: String,
     val supportingText: String,
     val glowIntensity: Float,
     val accentWarmth: Float, // 0f to 1f factor for accent richness
+    val surfaceRichness: Float, // 0f to 1f factor for surface opacity/emphasis
 ) {
     object FreshStart : JourneyAtmosphere(
         title = "Fresh Start",
-        supportingText = "Your savings journey starts here.",
-        glowIntensity = 0.12f, // Further reduced for deep AMOLED blacks
-        accentWarmth = 0.4f
+        supportingText = "Every journey starts somewhere.",
+        glowIntensity = 0.08f, 
+        accentWarmth = 0.1f,
+        surfaceRichness = 0.2f
     )
 
     object BuildingMomentum : JourneyAtmosphere(
-        title = "Building Momentum",
-        supportingText = "Consistency is building momentum.",
-        glowIntensity = 0.18f,
-        accentWarmth = 0.5f
+        title = "Momentum Building",
+        supportingText = "Small actions are becoming progress.",
+        glowIntensity = 0.16f,
+        accentWarmth = 0.35f,
+        surfaceRichness = 0.35f
     )
 
     object FindingConsistency : JourneyAtmosphere(
         title = "Midway Journey",
         supportingText = "Consistency is shaping the outcome.",
-        glowIntensity = 0.25f,
-        accentWarmth = 0.65f
+        glowIntensity = 0.24f,
+        accentWarmth = 0.6f,
+        surfaceRichness = 0.5f
     )
 
     object FinalStretch : JourneyAtmosphere(
         title = "Almost There",
         supportingText = "The finish line is getting closer.",
-        glowIntensity = 0.45f,
-        accentWarmth = 0.9f
+        glowIntensity = 0.38f,
+        accentWarmth = 0.85f,
+        surfaceRichness = 0.75f
     )
 
     object JourneyComplete : JourneyAtmosphere(
         title = "Goal Achieved",
         supportingText = "A goal completed through discipline.",
-        glowIntensity = 0.6f, // Capped to avoid excessive bloom on AMOLED
-        accentWarmth = 1.0f
+        glowIntensity = 0.55f, 
+        accentWarmth = 1.0f,
+        surfaceRichness = 1.0f
     )
-
+    
     companion object {
         fun fromProgress(progress: Float): JourneyAtmosphere {
             return when {
@@ -62,16 +80,49 @@ sealed class JourneyAtmosphere(
     }
 }
 
+@Composable
+fun rememberAnimatedAtmosphere(target: JourneyAtmosphere): AtmosphereParams {
+    val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
+    
+    val duration = if (isReducedMotion) 0 else 2000
+    
+    val glow by animateFloatAsState(
+        targetValue = target.glowIntensity,
+        animationSpec = tween(duration),
+        label = "glow"
+    )
+    
+    val warmth by animateFloatAsState(
+        targetValue = target.accentWarmth,
+        animationSpec = tween(duration),
+        label = "warmth"
+    )
+    
+    val richness by animateFloatAsState(
+        targetValue = target.surfaceRichness,
+        animationSpec = tween(duration),
+        label = "richness"
+    )
+    
+    return remember(glow, warmth, richness) {
+        AtmosphereParams(glow, warmth, richness)
+    }
+}
+
 /**
  * Extension to get a dynamic color based on atmosphere warmth.
  */
-fun JourneyAtmosphere.getAdaptiveAccent(baseColor: Color = SoftAccentPink): Color {
+fun getAdaptiveAccent(warmth: Float, baseColor: Color = SoftAccentPink): Color {
     return Color(
-        red = baseColor.red + (PrimaryAccentPink.red - baseColor.red) * accentWarmth,
-        green = baseColor.green + (PrimaryAccentPink.green - baseColor.green) * accentWarmth,
-        blue = baseColor.blue + (PrimaryAccentPink.blue - baseColor.blue) * accentWarmth,
+        red = baseColor.red + ((PrimaryAccentPink.red - baseColor.red) * warmth),
+        green = baseColor.green + ((PrimaryAccentPink.green - baseColor.green) * warmth),
+        blue = baseColor.blue + ((PrimaryAccentPink.blue - baseColor.blue) * warmth),
         alpha = baseColor.alpha
     )
 }
+
+fun JourneyAtmosphere.getAdaptiveAccent(baseColor: Color = SoftAccentPink): Color = 
+    getAdaptiveAccent(accentWarmth, baseColor)
 
 fun JourneyAtmosphere.getAdaptiveGold(baseColor: Color = SoftAccentPink): Color = getAdaptiveAccent(baseColor)

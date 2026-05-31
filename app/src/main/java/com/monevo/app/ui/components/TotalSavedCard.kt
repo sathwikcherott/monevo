@@ -14,9 +14,7 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.monevo.app.ui.atmosphere.JourneyAtmosphere
-import com.monevo.app.ui.atmosphere.JourneyState
-import com.monevo.app.ui.atmosphere.getAdaptiveAccent
+import com.monevo.app.ui.atmosphere.*
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -36,9 +34,10 @@ fun TotalSavedCard(
     val progressValue = progressProvider()
     val isCompleted = progressValue >= 1f
 
-    val atmosphere = atmosphereProvider()
+    val targetAtmosphere = atmosphereProvider()
+    val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
     val journeyState = journeyStateProvider()
-    val adaptiveAccent = atmosphere.getAdaptiveAccent()
+    val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
     
     // Removed infinite breathing animation to reduce rendering overhead and visual busyness
     // Constant ambient movement is reduced for a calmer premium feel.
@@ -70,10 +69,12 @@ fun TotalSavedCard(
             .shadow(
                 elevation = if (isGlowActive || isCompleted) motionSettings.scaleDp(2.dp, 0.5.dp) else 0.dp,
                 shape = RoundedCornerShape(24.dp),
-                spotColor = adaptiveAccent.copy(alpha = if (isCompleted) 0.08f else glowAlpha),
+                spotColor = adaptiveAccent.copy(alpha = if (isCompleted) 0.15f * atmosphere.surfaceRichness else glowAlpha),
                 ambientColor = Color.Transparent
             ),
-        colors = CardDefaults.cardColors(containerColor = SurfaceBase),
+        colors = CardDefaults.cardColors(
+            containerColor = SurfaceBase.copy(alpha = 0.8f + (0.2f * atmosphere.surfaceRichness))
+        ),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {

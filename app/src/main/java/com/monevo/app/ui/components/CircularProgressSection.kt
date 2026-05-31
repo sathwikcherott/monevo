@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.atmosphere.JourneyAtmosphere
 import com.monevo.app.ui.atmosphere.getAdaptiveAccent
+import com.monevo.app.ui.atmosphere.rememberAnimatedAtmosphere
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
@@ -28,8 +29,9 @@ fun CircularProgressSection(
 ) {
     val motionSettings = LocalMotionSettings.current
     val isReducedMotion = motionSettings.isReducedMotionEnabled
-    val atmosphere = atmosphereProvider()
-    val adaptiveAccent = atmosphere.getAdaptiveAccent()
+    val targetAtmosphere = atmosphereProvider()
+    val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
+    val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
     val progress = progressProvider()
     val totalSaved = totalSavedProvider()
     
@@ -42,9 +44,9 @@ fun CircularProgressSection(
         infiniteTransition.animateFloat(
             initialValue = 0.01f,
             targetValue = if (isMomentumActive) {
-                motionSettings.scaleValue(0.04f, 0.02f) * atmosphere.glowIntensity
+                motionSettings.scaleValue(0.06f, 0.02f) * atmosphere.glowIntensity
             } else {
-                0.01f * atmosphere.glowIntensity
+                0.02f * atmosphere.glowIntensity
             },
             animationSpec = infiniteRepeatable(
                 animation = tween(
@@ -69,7 +71,7 @@ fun CircularProgressSection(
         Canvas(modifier = Modifier.size(ringSize)) {
             // Background Track
             drawArc(
-                color = DividerStroke.copy(alpha = 0.5f),
+                color = DividerStroke.copy(alpha = 0.3f + (0.2f * atmosphere.surfaceRichness)),
                 startAngle = -90f,
                 sweepAngle = 360f,
                 useCenter = false,

@@ -11,19 +11,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.graphics.Color
+import com.monevo.app.ui.atmosphere.JourneyAtmosphere
+import com.monevo.app.ui.atmosphere.getAdaptiveAccent
+import com.monevo.app.ui.atmosphere.rememberAnimatedAtmosphere
 import com.monevo.app.ui.insights.InsightData
 import com.monevo.app.ui.theme.*
 
 @Composable
 fun InsightsCard(
     insightDataProvider: () -> InsightData,
+    atmosphereProvider: () -> JourneyAtmosphere,
     modifier: Modifier = Modifier
 ) {
     val insights = insightDataProvider()
+    val targetAtmosphere = atmosphereProvider()
+    val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
+    val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
     
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = PrimaryCard),
+        colors = CardDefaults.cardColors(
+            containerColor = PrimaryCard.copy(alpha = 0.6f + (0.4f * atmosphere.surfaceRichness))
+        ),
         shape = RoundedCornerShape(24.dp)
     ) {
         Column(
@@ -32,7 +42,7 @@ fun InsightsCard(
             Text(
                 text = "Behavioral Insights",
                 style = MaterialTheme.typography.labelSmall,
-                color = SecondaryText,
+                color = adaptiveAccent.copy(alpha = 0.6f),
                 fontWeight = FontWeight.Medium,
                 letterSpacing = 0.5.sp
             )
@@ -47,29 +57,32 @@ fun InsightsCard(
                 InsightItem(
                     label = "Daily Pace",
                     value = "₹${insights.averageDailySavings.toInt()}",
+                    accentColor = adaptiveAccent,
                     modifier = Modifier.weight(1f)
                 )
                 InsightItem(
                     label = "Weekly Pace",
                     value = "₹${insights.averageWeeklySavings.toInt()}",
+                    accentColor = adaptiveAccent,
                     modifier = Modifier.weight(1f)
                 )
                 InsightItem(
                     label = "Longest Streak",
                     value = "${insights.longestStreak} Days",
+                    accentColor = adaptiveAccent,
                     modifier = Modifier.weight(1f)
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
-            HorizontalDivider(color = DividerColor.copy(alpha = 0.1f))
+            HorizontalDivider(color = DividerColor.copy(alpha = 0.1f * atmosphere.surfaceRichness))
             Spacer(modifier = Modifier.height(20.dp))
 
             // 2. Forecast Section
             Text(
                 text = "Forecast",
                 style = MaterialTheme.typography.labelSmall,
-                color = SecondaryText.copy(alpha = 0.5f),
+                color = SecondaryText.copy(alpha = 0.4f + (0.1f * atmosphere.surfaceRichness)),
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
             )
@@ -86,7 +99,7 @@ fun InsightsCard(
             Text(
                 text = forecastText,
                 style = MaterialTheme.typography.bodyMedium,
-                color = PrimaryText,
+                color = TextPrimary.copy(alpha = 0.8f + (0.2f * atmosphere.surfaceRichness)),
                 lineHeight = 22.sp
             )
 
@@ -97,13 +110,13 @@ fun InsightsCard(
                 modifier = Modifier
                     .fillMaxWidth()
                     .clip(RoundedCornerShape(16.dp))
-                    .background(ElevatedCard.copy(alpha = 0.3f))
+                    .background(ElevatedCard.copy(alpha = 0.2f + (0.2f * atmosphere.surfaceRichness)))
                     .padding(16.dp)
             ) {
                 Text(
                     text = insights.reflectionInsight,
                     style = MaterialTheme.typography.labelMedium,
-                    color = SoftGold.copy(alpha = 0.9f),
+                    color = adaptiveAccent.copy(alpha = 0.8f),
                     lineHeight = 20.sp,
                     fontWeight = FontWeight.Medium
                 )
@@ -116,6 +129,7 @@ fun InsightsCard(
 private fun InsightItem(
     label: String,
     value: String,
+    accentColor: Color,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier) {
@@ -123,13 +137,13 @@ private fun InsightItem(
             text = value,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = PrimaryText
+            color = TextPrimary
         )
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
             fontSize = 9.sp,
-            color = SecondaryText.copy(alpha = 0.6f),
+            color = accentColor.copy(alpha = 0.5f),
             fontWeight = FontWeight.Medium
         )
     }

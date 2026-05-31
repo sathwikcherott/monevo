@@ -18,8 +18,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.monevo.app.ui.atmosphere.JourneyAtmosphere
-import com.monevo.app.ui.atmosphere.getAdaptiveAccent
+import com.monevo.app.ui.atmosphere.*
 import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 import kotlinx.coroutines.delay
@@ -32,11 +31,13 @@ fun MilestoneAccordionHeader(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     isGlowActive: Boolean = false,
-    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
+    atmosphereProvider: () -> JourneyAtmosphere = { JourneyAtmosphere.FreshStart }
 ) {
     val motionSettings = LocalMotionSettings.current
     val haptic = LocalHapticFeedback.current
-    val adaptiveAccent = atmosphere.getAdaptiveAccent()
+    val targetAtmosphere = atmosphereProvider()
+    val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
+    val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
 
     val rotation by animateFloatAsState(
         targetValue = if (isExpanded) 180f else 0f,
@@ -66,7 +67,7 @@ fun MilestoneAccordionHeader(
                 onClick()
             }
         },
-        color = SurfaceBase,
+        color = SurfaceBase.copy(alpha = 0.7f + (0.3f * atmosphere.surfaceRichness)),
         shape = RoundedCornerShape(20.dp),
         modifier = modifier
             .fillMaxWidth()
@@ -76,7 +77,7 @@ fun MilestoneAccordionHeader(
                     Modifier.shadow(
                         elevation = 1.dp,
                         shape = RoundedCornerShape(20.dp),
-                        spotColor = adaptiveAccent.copy(alpha = glowAlpha),
+                        spotColor = adaptiveAccent.copy(alpha = glowAlpha * atmosphere.surfaceRichness),
                         ambientColor = Color.Transparent
                     )
                 } else Modifier

@@ -244,7 +244,7 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                                 isExpanded = isExpanded,
                                 isLocked = group.isLocked,
                                 isGlowActive = pulsingMilestoneId == group.id,
-                                atmosphere = atmosphere.value,
+                                atmosphereProvider = { atmosphere.value },
                                 onClick = {
                                     if (!group.isLocked) {
                                         expandedSectionIndex = if (isExpanded) -1 else groupIndex

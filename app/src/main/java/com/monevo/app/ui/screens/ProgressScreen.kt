@@ -11,6 +11,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.monevo.app.ui.SavingsViewModel
+import com.monevo.app.ui.atmosphere.*
 import com.monevo.app.ui.components.*
 import com.monevo.app.ui.theme.PrimaryText
 import com.monevo.app.ui.theme.TextSecondary
@@ -125,7 +126,10 @@ fun ProgressScreen(
 
                 Spacer(modifier = Modifier.height(20.dp))
 
-                InsightsCard(insightDataProvider = insightDataProvider)
+                InsightsCard(
+                    insightDataProvider = insightDataProvider,
+                    atmosphereProvider = atmosphereProvider
+                )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
@@ -136,6 +140,10 @@ fun ProgressScreen(
                 )
 
                 val reflection = reflectionProvider()
+                val targetAtmosphere = atmosphereProvider()
+                val atmosphere = rememberAnimatedAtmosphere(targetAtmosphere)
+                val adaptiveAccent = getAdaptiveAccent(atmosphere.accentWarmth)
+
                 Column(
                     modifier = Modifier
                         .padding(top = 24.dp, bottom = 8.dp, start = 4.dp, end = 4.dp)
@@ -144,7 +152,7 @@ fun ProgressScreen(
                     Text(
                         text = "Reflections",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondary.copy(alpha = 0.5f),
+                        color = adaptiveAccent.copy(alpha = 0.5f),
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
                     )
@@ -153,13 +161,13 @@ fun ProgressScreen(
                         text = reflection.title,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = PrimaryText
+                        color = PrimaryText.copy(alpha = 0.8f + (0.2f * atmosphere.surfaceRichness))
                     )
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         text = reflection.message,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary.copy(alpha = 0.7f),
+                        color = TextSecondary.copy(alpha = 0.6f + (0.2f * atmosphere.surfaceRichness)),
                         lineHeight = 22.sp
                     )
                 }
