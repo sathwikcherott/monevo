@@ -82,7 +82,7 @@ fun PremiumConfettiOverlay(
             if (pProgress >= 1f) return@forEach
 
             val currentY = (p.y + p.speedY * particleElapsed) * height
-            val swing = if (motionSettings.isReducedMotionEnabled) 0.002f else 0.005f
+            val swing = if (motionSettings.isReducedMotionEnabled) 0f else 0.005f
             val currentX = (p.x + p.speedX * particleElapsed + Math.sin(particleElapsed.toDouble() * swing).toFloat() * 0.02f) * width
             val rotation = p.rotationSpeed * particleElapsed * 0.1f
 

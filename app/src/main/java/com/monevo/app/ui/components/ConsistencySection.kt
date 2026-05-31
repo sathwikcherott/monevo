@@ -21,9 +21,9 @@ import com.monevo.app.ui.theme.*
 
 @Composable
 fun ConsistencySection(
-    streakDays: Int,
-    bestWeekAmount: Int,
-    avgDailyAmount: Int,
+    streakDaysProvider: () -> Int,
+    bestWeekAmountProvider: () -> Int,
+    avgDailyAmountProvider: () -> Int,
     modifier: Modifier = Modifier
 ) {
     Card(
@@ -69,7 +69,7 @@ fun ConsistencySection(
             ) {
                 ConsistencyItem(
                     label = "Day Streak",
-                    value = if (streakDays == 1) "1 Day" else "$streakDays Days",
+                    value = if (streakDaysProvider() == 1) "1 Day" else "${streakDaysProvider()} Days",
                     icon = Icons.Outlined.LocalFireDepartment,
                     modifier = Modifier.weight(1f)
                 )
@@ -78,7 +78,7 @@ fun ConsistencySection(
 
                 ConsistencyItem(
                     label = "Best Week",
-                    value = "₹%,d".format(bestWeekAmount),
+                    value = "₹%,d".format(bestWeekAmountProvider()),
                     icon = Icons.Outlined.EmojiEvents,
                     modifier = Modifier.weight(1f)
                 )
@@ -87,7 +87,7 @@ fun ConsistencySection(
 
                 ConsistencyItem(
                     label = "Avg Daily",
-                    value = "₹%,d/day".format(avgDailyAmount),
+                    value = "₹%,d/day".format(avgDailyAmountProvider()),
                     icon = Icons.Outlined.CalendarToday,
                     modifier = Modifier.weight(1f)
                 )

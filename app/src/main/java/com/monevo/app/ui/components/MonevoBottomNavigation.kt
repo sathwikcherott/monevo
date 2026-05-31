@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavDestination
 import androidx.navigation.NavDestination.Companion.hierarchy
 import com.monevo.app.ui.Screen
+import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 
 @Composable
@@ -23,6 +24,9 @@ fun MonevoBottomNavigation(
     currentDestination: NavDestination?,
     onNavigate: (Screen) -> Unit
 ) {
+    val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
+    
     NavigationBar(
         containerColor = PrimaryBackground,
         tonalElevation = 0.dp,
@@ -35,8 +39,8 @@ fun MonevoBottomNavigation(
             
             // Restrained animations for everyday navigation to improve 120Hz stability
             val iconScale by animateFloatAsState(
-                targetValue = if (isSelected) 1.05f else 1.0f,
-                animationSpec = tween(300, easing = EaseOutCubic),
+                targetValue = if (isSelected && !isReducedMotion) 1.05f else 1.0f,
+                animationSpec = tween(if (isReducedMotion) 0 else 300, easing = EaseOutCubic),
                 label = "iconScale"
             )
 

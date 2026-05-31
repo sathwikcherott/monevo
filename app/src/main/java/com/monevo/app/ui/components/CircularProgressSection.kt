@@ -5,8 +5,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.StrokeCap
@@ -21,34 +20,42 @@ import com.monevo.app.ui.theme.*
 
 @Composable
 fun CircularProgressSection(
-    progress: Float,
-    totalSaved: Int,
+    progressProvider: () -> Float,
+    totalSavedProvider: () -> Int,
+    atmosphereProvider: () -> JourneyAtmosphere,
     modifier: Modifier = Modifier,
     isMomentumActive: Boolean = false,
-    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
     val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
+    val atmosphere = atmosphereProvider()
     val adaptiveAccent = atmosphere.getAdaptiveAccent()
+    val progress = progressProvider()
+    val totalSaved = totalSavedProvider()
     
     val infiniteTransition = rememberInfiniteTransition(label = "ringGlow")
     
     // Calmer pulse: slower duration and reduced intensity for better 120Hz stability
-    val pulseAlpha by infiniteTransition.animateFloat(
-        initialValue = 0.01f,
-        targetValue = if (isMomentumActive) {
-            motionSettings.scaleValue(0.04f, 0.02f) * atmosphere.glowIntensity
-        } else {
-            0.01f * atmosphere.glowIntensity
-        },
-        animationSpec = infiniteRepeatable(
-            animation = tween(
-                durationMillis = motionSettings.scaleDuration(6000),
-                easing = EaseInOutSine
+    val pulseAlpha by if (isReducedMotion) {
+        remember { mutableStateOf(0.01f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0.01f,
+            targetValue = if (isMomentumActive) {
+                motionSettings.scaleValue(0.04f, 0.02f) * atmosphere.glowIntensity
+            } else {
+                0.01f * atmosphere.glowIntensity
+            },
+            animationSpec = infiniteRepeatable(
+                animation = tween(
+                    durationMillis = motionSettings.scaleDuration(6000),
+                    easing = EaseInOutSine
+                ),
+                repeatMode = RepeatMode.Reverse
             ),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pulseAlpha"
-    )
+            label = "pulseAlpha"
+        )
+    }
 
     Box(
         modifier = modifier

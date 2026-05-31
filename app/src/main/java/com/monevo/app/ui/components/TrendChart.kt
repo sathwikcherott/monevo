@@ -21,9 +21,10 @@ import java.util.*
 
 @Composable
 fun TrendChart(
-    heights: List<Float>,
+    heightsProvider: () -> List<Float>,
     modifier: Modifier = Modifier
 ) {
+    val heights = heightsProvider()
     val days = listOf("M", "T", "W", "T", "F", "S", "S")
     
     val currentDayIndex = remember {

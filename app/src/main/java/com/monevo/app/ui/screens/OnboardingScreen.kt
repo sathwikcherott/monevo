@@ -4,6 +4,7 @@ import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
@@ -27,6 +28,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.util.lerp
+import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.theme.*
 import kotlinx.coroutines.launch
 import kotlin.math.absoluteValue
@@ -39,6 +41,8 @@ data class OnboardingPage(
 
 @Composable
 fun OnboardingScreen(onFinish: () -> Unit) {
+    val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
     val haptic = LocalHapticFeedback.current
     val pages = listOf(
         OnboardingPage(
@@ -69,7 +73,9 @@ fun OnboardingScreen(onFinish: () -> Unit) {
     // Haptic feedback on page snap
     LaunchedEffect(pagerState) {
         snapshotFlow { pagerState.currentPage }.collect {
-            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            if (!isReducedMotion) {
+                haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            }
         }
     }
 
@@ -118,16 +124,18 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                             stop = 1f,
                             fraction = 1f - pageOffset.coerceIn(0f, 1f)
                         )
-                        scaleX = lerp(
-                            start = 0.9f,
-                            stop = 1f,
-                            fraction = 1f - pageOffset.coerceIn(0f, 1f)
-                        )
-                        scaleY = lerp(
-                            start = 0.9f,
-                            stop = 1f,
-                            fraction = 1f - pageOffset.coerceIn(0f, 1f)
-                        )
+                        if (!isReducedMotion) {
+                            scaleX = lerp(
+                                start = 0.9f,
+                                stop = 1f,
+                                fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                            )
+                            scaleY = lerp(
+                                start = 0.9f,
+                                stop = 1f,
+                                fraction = 1f - pageOffset.coerceIn(0f, 1f)
+                            )
+                        }
                     }
                 )
             }
@@ -149,7 +157,7 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                         val isSelected = pagerState.currentPage == index
                         val width by animateDpAsState(
                             targetValue = if (isSelected) 24.dp else 8.dp,
-                            animationSpec = spring(dampingRatio = Spring.DampingRatioLowBouncy),
+                            animationSpec = if (isReducedMotion) tween(200) else spring(dampingRatio = Spring.DampingRatioLowBouncy),
                             label = "width"
                         )
                         val color by animateColorAsState(
@@ -171,7 +179,11 @@ fun OnboardingScreen(onFinish: () -> Unit) {
                     onClick = {
                         if (pagerState.currentPage < pages.size - 1) {
                             scope.launch {
-                                pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                if (isReducedMotion) {
+                                    pagerState.scrollToPage(pagerState.currentPage + 1)
+                                } else {
+                                    pagerState.animateScrollToPage(pagerState.currentPage + 1)
+                                }
                             }
                         } else {
                             onFinish()

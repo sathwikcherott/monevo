@@ -190,34 +190,42 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
     val transition = updateTransition(targetState = animationTriggered, label = "resetPhases")
 
     val bgAlpha by transition.animateFloat(
-        transitionSpec = { tween(1500, easing = EaseInOutSine) },
+        transitionSpec = { tween(if (isReducedMotion) 500 else 1500, easing = EaseInOutSine) },
         label = "bgAlpha"
     ) { if (it) 1f else 0f }
 
     val ringDissolve by transition.animateFloat(
-        transitionSpec = { 
-            keyframes {
-                durationMillis = totalDuration
-                1f at 0
-                0f at (totalDuration * 0.12).toInt() with FastOutSlowInEasing
-                0f at totalDuration
+        transitionSpec = {
+            if (isReducedMotion) {
+                tween(500)
+            } else {
+                keyframes {
+                    durationMillis = totalDuration
+                    1f at 0
+                    0f at (totalDuration * 0.12).toInt() with FastOutSlowInEasing
+                    0f at totalDuration
+                }
             }
         },
         label = "ringDissolve"
     ) { if (it) 0f else 1f }
 
     val ringRebuild by transition.animateFloat(
-        transitionSpec = { 
-            keyframes {
-                durationMillis = totalDuration
-                0f at 0
-                0.02f at (totalDuration * 0.14).toInt()
-                0.12f at (totalDuration * 0.28).toInt()
-                0.35f at (totalDuration * 0.52).toInt()
-                0.65f at (totalDuration * 0.75).toInt()
-                0.90f at (totalDuration * 0.93).toInt()
-                1f at (totalDuration * 0.98).toInt() with FastOutSlowInEasing
-                1f at totalDuration
+        transitionSpec = {
+            if (isReducedMotion) {
+                tween(totalDuration, easing = LinearOutSlowInEasing)
+            } else {
+                keyframes {
+                    durationMillis = totalDuration
+                    0f at 0
+                    0.02f at (totalDuration * 0.14).toInt()
+                    0.12f at (totalDuration * 0.28).toInt()
+                    0.35f at (totalDuration * 0.52).toInt()
+                    0.65f at (totalDuration * 0.75).toInt()
+                    0.90f at (totalDuration * 0.93).toInt()
+                    1f at (totalDuration * 0.98).toInt() with FastOutSlowInEasing
+                    1f at totalDuration
+                }
             }
         },
         label = "ringRebuild"
@@ -288,7 +296,8 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
                     AmbientParticle(
                         index = i, 
                         delayMillis = i * 250,
-                        animationTriggered = animationTriggered
+                        animationTriggered = animationTriggered,
+                        isReducedMotion = isReducedMotion
                     )
                 }
             }
@@ -438,15 +447,19 @@ fun CinematicResetAnimation(onFinishStage: () -> Unit) {
 fun AmbientLoadingLine(isVisible: Boolean, progress: Float, isReducedMotion: Boolean) {
     val infiniteTransition = rememberInfiniteTransition(label = "lineFlow")
     
-    val sweepOffset by infiniteTransition.animateFloat(
-        initialValue = -1f,
-        targetValue = 2f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(if (isReducedMotion) 6000 else 3000, easing = LinearEasing),
-            repeatMode = RepeatMode.Restart
-        ),
-        label = "sweep"
-    )
+    val sweepOffset by if (isReducedMotion) {
+        remember { mutableStateOf(0.5f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = -1f,
+            targetValue = 2f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(3000, easing = LinearEasing),
+                repeatMode = RepeatMode.Restart
+            ),
+            label = "sweep"
+        )
+    }
 
     Box(
         modifier = Modifier
@@ -480,28 +493,36 @@ fun AmbientLoadingLine(isVisible: Boolean, progress: Float, isReducedMotion: Boo
 }
 
 @Composable
-fun AmbientParticle(index: Int, delayMillis: Int, animationTriggered: Boolean) {
+fun AmbientParticle(index: Int, delayMillis: Int, animationTriggered: Boolean, isReducedMotion: Boolean) {
     val infiniteTransition = rememberInfiniteTransition(label = "drift")
     
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 0.1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(5000, delayMillis = delayMillis, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pAlpha"
-    )
+    val alpha by if (isReducedMotion) {
+        remember { mutableStateOf(0f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = 0.1f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(5000, delayMillis = delayMillis, easing = EaseInOutSine),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pAlpha"
+        )
+    }
     
-    val driftY by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = -60f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(8000, delayMillis = delayMillis, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "pDrift"
-    )
+    val driftY by if (isReducedMotion) {
+        remember { mutableStateOf(0f) }
+    } else {
+        infiniteTransition.animateFloat(
+            initialValue = 0f,
+            targetValue = -60f,
+            animationSpec = infiniteRepeatable(
+                animation = tween(8000, delayMillis = delayMillis, easing = EaseInOutSine),
+                repeatMode = RepeatMode.Reverse
+            ),
+            label = "pDrift"
+        )
+    }
 
     val xPos = ((index % 4) * 80).dp + (index * 5).dp
     val yPos = ((index / 4) * 150).dp

@@ -26,21 +26,22 @@ fun TotalSavedCard(
     completedCountProvider: () -> Int,
     totalCountProvider: () -> Int,
     goalProvider: () -> Int,
+    atmosphereProvider: () -> JourneyAtmosphere,
     modifier: Modifier = Modifier,
     isGlowActive: Boolean = false,
-    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
     val motionSettings = LocalMotionSettings.current
     val progressValue = progressProvider()
     val isCompleted = progressValue >= 1f
 
+    val atmosphere = atmosphereProvider()
     val adaptiveAccent = atmosphere.getAdaptiveAccent()
     
     // Removed infinite breathing animation to reduce rendering overhead and visual busyness
     // Constant ambient movement is reduced for a calmer premium feel.
 
     val recognitionScale by animateFloatAsState(
-        targetValue = if (isGlowActive) motionSettings.scaleValue(1.02f, 1.005f) else 1f,
+        targetValue = if (isGlowActive) motionSettings.scaleValue(1.02f, 1f) else 1f,
         animationSpec = motionSettings.gentleSpring(),
         label = "recognitionScale"
     )
@@ -48,7 +49,7 @@ fun TotalSavedCard(
     val glowAlpha by animateFloatAsState(
         targetValue = if (isGlowActive) motionSettings.scaleValue(0.15f, 0.08f) else 0f,
         animationSpec = tween(
-            durationMillis = motionSettings.scaleDuration(600), 
+            durationMillis = if (motionSettings.isReducedMotionEnabled) 150 else motionSettings.scaleDuration(600),
             easing = FastOutSlowInEasing
         ),
         label = "glowAlpha"

@@ -3,6 +3,7 @@ package com.monevo.app.ui.screens
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -367,21 +368,24 @@ fun ProfileToggleOption(
 
 @Composable
 fun MonevoToggle(checked: Boolean) {
+    val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
+    
     val trackColor by animateColorAsState(
         targetValue = if (checked) SoftAccentPink.copy(alpha = 0.9f) else SurfaceElevated,
-        animationSpec = spring(),
+        animationSpec = if (isReducedMotion) tween(200) else spring(),
         label = "trackColor"
     )
     
     val thumbColor by animateColorAsState(
         targetValue = if (checked) PrimaryBackground else TextSecondary.copy(alpha = 0.5f),
-        animationSpec = spring(),
+        animationSpec = if (isReducedMotion) tween(200) else spring(),
         label = "thumbColor"
     )
     
     val thumbOffset by animateDpAsState(
         targetValue = if (checked) 16.dp else 0.dp,
-        animationSpec = spring(stiffness = 900f),
+        animationSpec = if (isReducedMotion) tween(150) else spring(stiffness = 900f),
         label = "thumbOffset"
     )
 

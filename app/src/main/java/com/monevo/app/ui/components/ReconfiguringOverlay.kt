@@ -59,11 +59,15 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
                 LaunchedEffect(isVisible) {
                     if (isVisible) {
                         percentage = 0
-                        animate(0f, 40f, animationSpec = tween(800, easing = LinearOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
-                        kotlinx.coroutines.delay(150)
-                        animate(40f, 85f, animationSpec = tween(1000, easing = FastOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
-                        kotlinx.coroutines.delay(200)
-                        animate(85f, 100f, animationSpec = tween(600, easing = LinearEasing)) { v, _ -> percentage = v.toInt() }
+                        if (motionSettings.isReducedMotionEnabled) {
+                            animate(0f, 100f, animationSpec = tween(500, easing = LinearOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
+                        } else {
+                            animate(0f, 40f, animationSpec = tween(800, easing = LinearOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
+                            kotlinx.coroutines.delay(150)
+                            animate(40f, 85f, animationSpec = tween(1000, easing = FastOutSlowInEasing)) { v, _ -> percentage = v.toInt() }
+                            kotlinx.coroutines.delay(200)
+                            animate(85f, 100f, animationSpec = tween(600, easing = LinearEasing)) { v, _ -> percentage = v.toInt() }
+                        }
                     }
                 }
 
@@ -95,7 +99,7 @@ fun ReconfiguringOverlay(isVisible: Boolean, targetGoal: Int) {
                 ) {
                     val widthScale by animateFloatAsState(
                         targetValue = percentage / 100f,
-                        animationSpec = spring(stiffness = Spring.StiffnessVeryLow),
+                        animationSpec = if (motionSettings.isReducedMotionEnabled) tween(300) else spring(stiffness = Spring.StiffnessVeryLow),
                         label = "loadingWidth"
                     )
                     

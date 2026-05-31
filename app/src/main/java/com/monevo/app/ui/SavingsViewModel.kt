@@ -58,6 +58,14 @@ class SavingsViewModel(application: Application) : AndroidViewModel(application)
         JourneyAtmosphere.fromProgress(progress)
     }
 
+    val completedTilesCount by derivedStateOf {
+        tiles.count { it.isCompleted }
+    }
+
+    val totalTilesCount by derivedStateOf {
+        tiles.size
+    }
+
     // --- PURE CALCULATION LOGIC ---
 
     private fun calculateUnlockedGroups(totalSaved: Int, milestoneStep: Int = 5000): Int {

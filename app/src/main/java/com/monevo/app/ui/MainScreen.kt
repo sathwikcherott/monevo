@@ -12,8 +12,7 @@ import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.DateRange
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material3.Scaffold
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -24,6 +23,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.monevo.app.ui.components.MonevoBottomNavigation
 import com.monevo.app.ui.components.ReconfiguringOverlay
+import com.monevo.app.ui.motion.LocalMotionSettings
 import com.monevo.app.ui.motion.ProvideMotionSettings
 import com.monevo.app.ui.screens.HomeScreen
 import com.monevo.app.ui.screens.OnboardingScreen
@@ -61,9 +61,16 @@ fun MainScreen() {
                             val navBackStackEntry by navController.currentBackStackEntryAsState()
                             val currentDestination = navBackStackEntry?.destination
                             
+                            val isBottomBarVisible = remember { mutableStateOf(false) }
+                            LaunchedEffect(viewModel.isFreshStartArrival, viewModel.isAppLaunchEntrance) {
+                                if (viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) {
+                                    isBottomBarVisible.value = true
+                                }
+                            }
+
                             CinematicEntrance(
                                 index = 8, 
-                                isTriggered = viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance
+                                isTriggered = isBottomBarVisible.value
                             ) {
                                 MonevoBottomNavigation(
                                     screens = items,
@@ -81,14 +88,17 @@ fun MainScreen() {
                             }
                         }
                     ) { innerPadding ->
+                        val motionSettings = LocalMotionSettings.current
+                        val navDuration = motionSettings.scaleDuration(400, 0.5f)
+                        
                         NavHost(
                             navController = navController,
                             startDestination = Screen.Home.route,
                             modifier = Modifier.padding(innerPadding),
-                            enterTransition = { fadeIn(animationSpec = tween(400)) },
-                            exitTransition = { fadeOut(animationSpec = tween(400)) },
-                            popEnterTransition = { fadeIn(animationSpec = tween(400)) },
-                            popExitTransition = { fadeOut(animationSpec = tween(400)) }
+                            enterTransition = { fadeIn(animationSpec = tween(navDuration)) },
+                            exitTransition = { fadeOut(animationSpec = tween(navDuration)) },
+                            popEnterTransition = { fadeIn(animationSpec = tween(navDuration)) },
+                            popExitTransition = { fadeOut(animationSpec = tween(navDuration)) }
                         ) {
                             composable(Screen.Home.route) { HomeScreen(viewModel) }
                             composable(Screen.Progress.route) { 

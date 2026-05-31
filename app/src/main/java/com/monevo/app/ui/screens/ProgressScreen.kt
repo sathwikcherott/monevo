@@ -19,12 +19,13 @@ fun ProgressScreen(
     viewModel: SavingsViewModel,
     onNavigateHome: () -> Unit
 ) {
-    val consistency = viewModel.consistencyStats
     val totalSaved = viewModel.totalSaved
-    val progress = viewModel.progress
     val isFreshStart = totalSaved == 0
-    // Momentum building is now percentage-based (2% to 30% of journey)
-    val isMomentumBuilding = progress in 0.02f..0.3f
+    
+    // Defer reading specific stats to avoid top-level recomposition
+    val progressProvider = { viewModel.progress }
+    val atmosphereProvider = { viewModel.atmosphere }
+    val totalSavedProvider = { viewModel.totalSaved }
 
     Column(
         modifier = Modifier
@@ -50,7 +51,8 @@ fun ProgressScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                if (isMomentumBuilding) {
+                // Momentum building is now percentage-based (2% to 30% of journey)
+                if (progressProvider() in 0.02f..0.3f) {
                     MomentumBanner()
                     Spacer(modifier = Modifier.height(8.dp))
                 } else {
@@ -58,10 +60,10 @@ fun ProgressScreen(
                 }
                 
                 CircularProgressSection(
-                    progress = viewModel.progress,
-                    totalSaved = totalSaved,
-                    isMomentumActive = isMomentumBuilding,
-                    atmosphere = viewModel.atmosphere
+                    progressProvider = progressProvider,
+                    totalSavedProvider = totalSavedProvider,
+                    isMomentumActive = progressProvider() in 0.02f..0.3f,
+                    atmosphereProvider = atmosphereProvider
                 )
                 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -79,7 +81,7 @@ fun ProgressScreen(
                     )
                     AnalyticsCard(
                         title = "Completed",
-                        value = "${viewModel.tiles.count { it.isCompleted }} tiles",
+                        value = "${viewModel.completedTilesCount} tiles",
                         isHighlighted = true,
                         atmosphere = viewModel.atmosphere,
                         modifier = Modifier.weight(0.9f)
@@ -88,22 +90,22 @@ fun ProgressScreen(
                 
                 Spacer(modifier = Modifier.height(20.dp))
                 
-                TrendChart(heights = viewModel.weeklyMomentum)
+                TrendChart(heightsProvider = { viewModel.weeklyMomentum })
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 MilestonesProgress(
-                    totalSaved = viewModel.totalSaved,
-                    goalAmount = viewModel.goalAmount,
-                    atmosphere = viewModel.atmosphere
+                    totalSavedProvider = totalSavedProvider,
+                    goalAmountProvider = { viewModel.goalAmount },
+                    atmosphereProvider = atmosphereProvider
                 )
 
                 Spacer(modifier = Modifier.height(20.dp))
 
                 ConsistencySection(
-                    streakDays = consistency.streak,
-                    bestWeekAmount = consistency.bestWeek,
-                    avgDailyAmount = consistency.avgDaily
+                    streakDaysProvider = { viewModel.consistencyStats.streak },
+                    bestWeekAmountProvider = { viewModel.consistencyStats.bestWeek },
+                    avgDailyAmountProvider = { viewModel.consistencyStats.avgDaily }
                 )
                 
                 Spacer(modifier = Modifier.height(100.dp))

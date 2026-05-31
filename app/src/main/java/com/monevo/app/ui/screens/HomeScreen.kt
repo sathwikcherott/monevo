@@ -7,7 +7,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.GridItemSpan
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.*
@@ -37,8 +40,9 @@ import kotlinx.coroutines.delay
 @Composable
 fun HomeScreen(viewModel: SavingsViewModel) {
     val motionSettings = LocalMotionSettings.current
-    val isReducedMotion = motionSettings.isReducedMotionEnabled
-    
+    val context = LocalContext.current
+    val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
+
     // Stabilize state access to minimize parent recompositions
     val groupedTiles by remember { derivedStateOf { viewModel.groupedTiles } }
     var expandedSectionIndex by remember { mutableIntStateOf(0) }
@@ -48,24 +52,26 @@ fun HomeScreen(viewModel: SavingsViewModel) {
     var celebrationTrigger by remember { mutableStateOf<CelebrationType?>(null) }
     var showFreshStartMessage by remember { mutableStateOf(false) }
     
-    var isEntering by remember { 
-        mutableStateOf(viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) 
+    // Architecture Refactor: Persistent entrance state to prevent re-triggering
+    val isEntranceActive = remember { 
+        viewModel.isAppLaunchEntrance || viewModel.isFreshStartArrival 
     }
     
-    val context = LocalContext.current
-    val vibrator = remember { context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator }
-
-    // Use specific derived states for child components to prevent unnecessary ripple recompositions
+    // Deterministic entrance orchestration
+    var showTiles by remember { mutableStateOf(!isEntranceActive) }
+    
+    // Stabilized derived states for UI components
     val totalSaved = remember { derivedStateOf { viewModel.totalSaved } }
     val progress = remember { derivedStateOf { viewModel.progress } }
-    val tilesCount = remember { derivedStateOf { viewModel.tiles.count { it.isCompleted } } }
-    val tilesTotal = remember { derivedStateOf { viewModel.tiles.size } }
+    val tilesCount = remember { derivedStateOf { viewModel.completedTilesCount } }
+    val tilesTotal = remember { derivedStateOf { viewModel.totalTilesCount } }
     val goalAmount = remember { derivedStateOf { viewModel.goalAmount } }
     val atmosphere = remember { derivedStateOf { viewModel.atmosphere } }
 
-    LaunchedEffect(viewModel.isFreshStartArrival, viewModel.isAppLaunchEntrance) {
-        if (viewModel.isFreshStartArrival || viewModel.isAppLaunchEntrance) {
-            isEntering = true
+    LaunchedEffect(isEntranceActive) {
+        if (isEntranceActive) {
+            delay(100)
+            showTiles = true
             
             if (viewModel.isFreshStartArrival) {
                 showFreshStartMessage = true
@@ -73,13 +79,9 @@ fun HomeScreen(viewModel: SavingsViewModel) {
                 showFreshStartMessage = false
                 viewModel.isFreshStartArrival = false
             }
-            
             if (viewModel.isAppLaunchEntrance) {
-                delay(if (isReducedMotion) 500 else 2000)
                 viewModel.isAppLaunchEntrance = false
             }
-            
-            isEntering = false
         }
     }
 
@@ -192,41 +194,71 @@ fun HomeScreen(viewModel: SavingsViewModel) {
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            CinematicEntrance(index = 0, isTriggered = isEntering) {
+            // Architecture: Unified entrance for top card
+            CinematicEntrance(index = 0, isTriggered = showTiles) {
                 TotalSavedCard(
                     totalProvider = { totalSaved.value },
                     progressProvider = { progress.value },
                     completedCountProvider = { tilesCount.value },
                     totalCountProvider = { tilesTotal.value },
                     goalProvider = { goalAmount.value },
-                    isGlowActive = showRecognitionGlow,
-                    atmosphere = atmosphere.value
+                    atmosphereProvider = { atmosphere.value },
+                    isGlowActive = showRecognitionGlow
                 )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            LazyColumn(
+            // Architecture Refactor: LazyVerticalGrid for stable, high-performance tile rendering
+            LazyVerticalGrid(
+                columns = GridCells.Fixed(5),
                 modifier = Modifier.fillMaxSize(),
                 contentPadding = PaddingValues(top = 8.dp, bottom = 120.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                groupedTiles.forEachIndexed { index, group ->
-                    item(key = "group_${group.id}") {
-                        val isExpanded = expandedSectionIndex == index && !group.isLocked
-                        
-                        MilestoneGroupItem(
-                            group = group,
-                            isExpanded = isExpanded,
-                            index = index,
-                            isEntering = isEntering,
-                            isGlowActive = pulsingMilestoneId == group.id,
-                            atmosphere = atmosphere.value,
-                            onToggle = {
-                                expandedSectionIndex = if (isExpanded) -1 else index
-                            },
-                            onTileClick = { viewModel.toggleTile(it) }
-                        )
+                groupedTiles.forEachIndexed { groupIndex, group ->
+                    val isExpanded = expandedSectionIndex == groupIndex && !group.isLocked
+
+                    // Stable Header Item
+                    item(
+                        key = "header_${group.id}", 
+                        span = { GridItemSpan(5) }
+                    ) {
+                        CinematicEntrance(index = groupIndex + 1, isTriggered = showTiles) {
+                            MilestoneAccordionHeader(
+                                name = group.name,
+                                isExpanded = isExpanded,
+                                isLocked = group.isLocked,
+                                isGlowActive = pulsingMilestoneId == group.id,
+                                atmosphere = atmosphere.value,
+                                onClick = {
+                                    if (!group.isLocked) {
+                                        expandedSectionIndex = if (isExpanded) -1 else groupIndex
+                                    }
+                                }
+                            )
+                        }
+                    }
+
+                    // Architecture Refactor: Individual tile items for maximum stability and scroll performance
+                    // Items are only present in composition when expanded, avoiding unnecessary mounting.
+                    if (isExpanded) {
+                        items(
+                            items = group.tiles,
+                            key = { it.id } // STABLE KEY: Required for 120Hz performance
+                        ) { tile ->
+                            // Use lightweight stagger wrapper
+                            TileEntranceWrapper(
+                                index = group.tiles.indexOf(tile), // Local stagger for calmness
+                                isTriggered = showTiles
+                            ) {
+                                SavingsTileItem(
+                                    tile = tile, 
+                                    onClick = { viewModel.toggleTile(tile.id) }
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -241,49 +273,44 @@ fun HomeScreen(viewModel: SavingsViewModel) {
 }
 
 @Composable
-private fun MilestoneGroupItem(
-    group: com.monevo.app.ui.MilestoneGroup,
-    isExpanded: Boolean,
+fun TileEntranceWrapper(
     index: Int,
-    isEntering: Boolean,
-    isGlowActive: Boolean,
-    atmosphere: JourneyAtmosphere,
-    onToggle: () -> Unit,
-    onTileClick: (Int) -> Unit
+    isTriggered: Boolean,
+    content: @Composable () -> Unit
 ) {
-    // Isolate the cinematic entrance to avoid re-triggering parent logic
-    CinematicEntrance(index = index + 1, isTriggered = isEntering) {
-        Column {
-            MilestoneAccordionHeader(
-                name = group.name,
-                isExpanded = isExpanded,
-                isLocked = group.isLocked,
-                isGlowActive = isGlowActive,
-                atmosphere = atmosphere,
-                onClick = onToggle
-            )
+    val motionSettings = LocalMotionSettings.current
+    val isReducedMotion = motionSettings.isReducedMotionEnabled
 
-            // Optimized expansion: Only recompose the visibility scope
-            AnimatedVisibility(
-                visible = isExpanded,
-                // Restrained transitions for better frame pacing at 120Hz
-                enter = fadeIn(animationSpec = tween(300)) + expandVertically(animationSpec = tween(300)),
-                exit = fadeOut(animationSpec = tween(250)) + shrinkVertically(animationSpec = tween(250))
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp, bottom = 16.dp)
-                ) {
-                    TileGrid(
-                        tiles = group.tiles,
-                        onTileClick = onTileClick,
-                        isEntering = isEntering,
-                        baseStaggerIndex = (index + 2) * 3 // Reduced stagger multiplier
-                    )
-                }
+    // Architecture: Lightweight deterministic stagger without coroutines/delays
+    val alpha by animateFloatAsState(
+        targetValue = if (isTriggered) 1f else 0f,
+        animationSpec = tween(
+            durationMillis = motionSettings.scaleDuration(400, 0.5f),
+            delayMillis = (index * (if (isReducedMotion) 10 else 25)).coerceAtMost(if (isReducedMotion) 200 else 500), // Calm, capped stagger
+            easing = EaseOutCubic
+        ),
+        label = "tileAlpha"
+    )
+
+    val translateY by animateFloatAsState(
+        targetValue = if (isTriggered || isReducedMotion) 0f else 12f,
+        animationSpec = tween(
+            durationMillis = motionSettings.scaleDuration(500, 0.5f),
+            delayMillis = (index * 25).coerceAtMost(500),
+            easing = EaseOutCubic
+        ),
+        label = "tileTranslation"
+    )
+
+    Box(
+        modifier = Modifier.graphicsLayer {
+            this.alpha = alpha
+            if (!isReducedMotion) {
+                this.translationY = translateY.dp.toPx()
             }
         }
+    ) {
+        content()
     }
 }
 
@@ -296,25 +323,12 @@ fun CinematicEntrance(
     val motionSettings = LocalMotionSettings.current
     val isReducedMotion = motionSettings.isReducedMotionEnabled
     
-    var hasTriggered by remember { mutableStateOf(false) }
-    var isVisible by remember { mutableStateOf(!isTriggered) }
-
-    LaunchedEffect(isTriggered) {
-        if (isTriggered && !hasTriggered) {
-            hasTriggered = true
-            isVisible = false
-            if (!isReducedMotion) {
-                delay(100L + (index * 60L)) // Refined delay for better frame pacing
-            }
-            isVisible = true
-        }
-    }
-
-    // Single progress-based animation for both alpha and translation to reduce overhead at 120Hz
+    // Architecture: Deterministic progress animation without internal state or LaunchedEffects
     val entranceProgress by animateFloatAsState(
-        targetValue = if (isVisible) 1f else 0f,
+        targetValue = if (isTriggered) 1f else 0f,
         animationSpec = tween(
-            durationMillis = if (isReducedMotion) 300 else 500, 
+            durationMillis = if (isReducedMotion) 200 else 500, 
+            delayMillis = index * (if (isReducedMotion) 20 else 60), // Sequential staging
             easing = EaseOutCubic
         ),
         label = "entranceProgress"

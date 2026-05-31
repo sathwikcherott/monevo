@@ -22,11 +22,14 @@ import com.monevo.app.ui.theme.*
 
 @Composable
 fun MilestonesProgress(
-    totalSaved: Int,
-    goalAmount: Int,
+    totalSavedProvider: () -> Int,
+    goalAmountProvider: () -> Int,
+    atmosphereProvider: () -> JourneyAtmosphere,
     modifier: Modifier = Modifier,
-    atmosphere: JourneyAtmosphere = JourneyAtmosphere.FreshStart
 ) {
+    val totalSaved = totalSavedProvider()
+    val goalAmount = goalAmountProvider()
+    val atmosphere = atmosphereProvider()
     val adaptiveGold = atmosphere.getAdaptiveGold()
     val milestones = remember(goalAmount) {
         val step = goalAmount / 5
